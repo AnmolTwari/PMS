@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= area.name %> - Slots</title>
+</head>
+<body>
+  <h2>Slots for <%= area.name %></h2>
+  <a href="/dashboard">← Back to Areas</a>
+  <table border="1">
+    <tr>
+      <th>Slot Number</th>
+      <th>Occupied</th>
+      <th>Car Number</th>
+      <th>Actions</th>
+    </tr>
+    <% area.slots.forEach(slot => { %>
+      <tr>
+        <td><%= slot.slotNumber %></td>
+        <td><%= slot.occupied ? 'Yes' : 'No' %></td>
+        <td><%= slot.carNumber || '-' %></td>
+        <td>
+          <% if (!slot.occupied) { %>
+            <form action="/park" method="POST" style="display:inline;">
+              <input type="hidden" name="areaId" value="<%= area._id %>">
+              <input type="hidden" name="slotNumber" value="<%= slot.slotNumber %>">
+              <input type="text" name="carNumber" placeholder="Car Number" required>
+              <button type="submit">Park</button>
+            </form>
+          <% } else { %>
+            <form action="/remove" method="POST" style="display:inline;">
+              <input type="hidden" name="areaId" value="<%= area._id %>">
+              <input type="hidden" name="slotNumber" value="<%= slot.slotNumber %>">
+              <button type="submit">Remove</button>
+            </form>
+          <% } %>
+        </td>
+      </tr>
+    <% }) %>
+  </table>
+  
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parking Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+    .welcome { margin-bottom: 10px; text-align: right; color: #666; font-size: 1.02em; }
+    .logout-btn { background: #f87171; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; font-size: 1em; cursor: pointer; margin-left: 8px;}
+    .area-block { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px #0001; margin-bottom: 30px; padding: 18px; }
+    .area-title { font-size: 1.25em; color: #194185; margin: 0; cursor: pointer; display: inline-block; }
+    .area-title:hover { text-decoration: underline; }
+    .area-table-wrapper { display: none; margin-top: 20px; }
+    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+    .parking-slot { border: 1px solid #ddd; border-radius: 5px; padding: 10px; text-align: center; position: relative; height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
+    .slot-available { background-color: #dcfce7; border-color: #15803d; }
+    .slot-occupied { background-color: #fee2e2; border-color: #b91c1c; }
+    .slot-number { font-weight: bold; font-size: 1.1em; }
+    .slot-status { margin: 5px 0; }
+    .occupied { color: #b91c1c; font-weight: bold;}
+    .available { color: #15803d; font-weight: bold;}
+    .emp-id { font-size: 0.9em; margin-bottom: 5px; }
+    .action-form { margin-top: 5px; }
+    .btn { background: #2563eb; color: #fff; border: none; border-radius: 3px; padding: 3px 10px; font-size: 0.9em; cursor: pointer; width: 100%; margin-top: 5px; }
+    .btn:hover { background: #1d4ed8; }
+    input[type="text"] { width: 100%; padding: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 3px; font-size: 0.9em; }
+    .caret { display: inline-block; margin-right: 6px; transition: transform 0.2s; }
+    .caret.down { transform: rotate(90deg); }
+
+    .status-container { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 30px; }
+    .status-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px #0001; padding: 15px; flex: 1; min-width: 200px; margin: 0 10px 10px 0; position: relative; }
+    .status-title { font-size: 1.1em; color: #194185; margin-top: 0; margin-bottom: 10px; text-align: center; }
+    .status-numbers { display: flex; justify-content: space-around; text-align: center; }
+    .status-item { padding: 8px; }
+    .status-value { font-size: 1.5em; font-weight: bold; display: block; }
+    .status-label { font-size: 0.85em; color: #666; }
+    .available-value { color: #15803d; }
+    .occupied-value { color: #b91c1c; }
+    .total-value { color: #1e40af; }
+    .occupancy-bar { height: 8px; background: #e5e7eb; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+    .occupancy-fill { height: 100%; background: linear-gradient(90deg, #15803d, #b91c1c); transition: width 0.5s ease; }
+  </style>
+  <script>
+    function toggleArea(areaIdx) {
+      const wrapper = document.getElementById('area-table-' + areaIdx);
+      const caret = document.getElementById('caret-' + areaIdx);
+      wrapper.style.display = wrapper.style.display === 'block' ? 'none' : 'block';
+      caret.classList.toggle('down');
+    }
+
+    window.onload = function() {
+      // Optional: any JS functionality you want to add on load
+    };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <div class="welcome">
+      Welcome, <%= user %>!
+      <a href="/logout"><button class="logout-btn">Logout</button></a>
+    </div>
+    <h2 style="text-align:center;">Employee Parking Dashboard</h2>
+
+    <!-- STATUS OVERVIEW -->
+    <div class="status-container">
+      <% 
+        const areas = ['Area 1', 'Area 2', 'Area 3', 'Area 4'];
+        areas.forEach((area, index) => {
+          const total = 50;
+          const occupied = (groupedSlots[area] || []).filter(slot => slot.occupied).length;
+          const available = total - occupied;
+          const percent = Math.round((occupied / total) * 100);
+      %>
+        <div class="status-card">
+          <h3 class="status-title"><%= area %> Status</h3>
+          <div class="status-numbers">
+            <div class="status-item">
+              <span class="status-value available-value"><%= available %></span>
+              <span class="status-label">Available</span>
+            </div>
+            <div class="status-item">
+              <span class="status-value occupied-value"><%= occupied %></span>
+              <span class="status-label">Occupied</span>
+            </div>
+            <div class="status-item">
+              <span class="status-value total-value"><%= total %></span>
+              <span class="status-label">Total</span>
+            </div>
+          </div>
+          <div class="occupancy-bar">
+            <div class="occupancy-fill" style="width: <%= percent %>%"></div>
+          </div>
+          <div style="text-align: center; margin-top: 5px; font-size: 0.9em;">
+            Occupancy: <%= percent %>%
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- PARKING SLOTS PER AREA -->
+    <% areas.forEach((area, areaIndex) => { %>
+      <div class="area-block">
+        <span class="area-title" onclick="toggleArea(<%= areaIndex %>)">
+          <span class="caret" id="caret-<%= areaIndex %>">&#9654;</span> <%= area %>
+        </span>
+        <div class="area-table-wrapper" id="area-table-<%= areaIndex %>">
+          <div class="slot-grid">
+            <% for(let i = 1; i <= 50; i++) {
+              const slotData = (groupedSlots[area] || []).find(s => s.slotNumber === i);
+              const isOccupied = slotData && slotData.occupied;
+              const employeeId = slotData ? slotData.employeeId : null;
+            %>
+              <div class="parking-slot <%= isOccupied ? 'slot-occupied' : 'slot-available' %>">
+                <div class="slot-number">Slot <%= i %></div>
+                <% if (isOccupied) { %>
+                  <div class="slot-status occupied">Occupied</div>
+                  <div class="emp-id">Emp ID: <%= employeeId %></div>
+                  <form class="action-form" method="POST" action="/release">
+                    <input type="hidden" name="area" value="<%= area %>">
+                    <input type="hidden" name="slotNumber" value="<%= i %>">
+                    <button class="btn">Release</button>
+                  </form>
+                <% } else { %>
+                  <div class="slot-status available">Available</div>
+                  <form class="action-form" method="POST" action="/assign">
+                    <input type="hidden" name="area" value="<%= area %>">
+                    <input type="hidden" name="slotNumber" value="<%= i %>">
+                    <input type="text" name="employeeId" placeholder="Enter Emp ID" required>
+                    <button class="btn">Assign</button>
+                  </form>
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>
