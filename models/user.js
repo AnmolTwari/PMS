@@ -7,7 +7,10 @@ const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true },
   employeeId: { type: String, unique: true, required: true },
   vehicleNo: { type: String, unique: true, required: false },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },  // 👈 Add this line
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  resetPasswordToken: String,
+  reserPasswordExpires: Date,
+
 });
 
 

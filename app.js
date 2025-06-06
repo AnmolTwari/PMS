@@ -4,8 +4,22 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
-// Models and Schemas
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.set('view engine', 'ejs');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/parking_app', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log('✅ MongoDB connected'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
+
+// Schemas & Models
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   email: { type: String, unique: true, required: true },
@@ -13,7 +27,11 @@ const userSchema = new mongoose.Schema({
   mobile: { type: String, required: true },
   employeeId: { type: String, unique: true, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  vehicleNo: { type: String, default: null }
+  vehicleNo: { type: String, default: null },
+
+  // Fields for password reset
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 });
 
 const parkingSlotSchema = new mongoose.Schema({
@@ -26,19 +44,6 @@ const parkingSlotSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 const ParkingSlot = mongoose.model('ParkingSlot', parkingSlotSchema);
-
-// Middleware & Config
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.set('view engine', 'ejs');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
-
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/parking_app', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('✅ MongoDB connected'))
-  .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Initialize parking slots once if none exist
 async function initializeParkingSlots() {
@@ -56,7 +61,7 @@ async function initializeParkingSlots() {
 }
 initializeParkingSlots();
 
-// Admin config from environment or defaults
+// Admin config
 const ADMIN_CONFIG = {
   username: process.env.ADMIN_USERNAME || 'superadmin',
   password: process.env.ADMIN_PASSWORD || 'SecurePass123!',
@@ -65,7 +70,7 @@ const ADMIN_CONFIG = {
   employeeId: process.env.ADMIN_EMPLOYEE_ID || 'EMP001',
 };
 
-// Create admin user if not exists
+// Create initial admin user if not exists
 async function createInitialAdmin() {
   try {
     const existingAdmin = await User.findOne({ role: 'admin' });
@@ -79,7 +84,6 @@ async function createInitialAdmin() {
         employeeId: ADMIN_CONFIG.employeeId,
         role: 'admin',
       });
-
       await newAdmin.save();
       console.log('✅ Initial admin user created');
     } else {
@@ -91,7 +95,7 @@ async function createInitialAdmin() {
 }
 createInitialAdmin();
 
-// JWT authentication middleware
+// JWT auth middleware
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.redirect('/login');
@@ -103,13 +107,11 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Helper to group parking slots by area for dashboard rendering
+// Helper function to group slots by area
 function groupSlotsByArea(slots) {
   const grouped = {};
   slots.forEach(slot => {
-    if (!grouped[slot.areaName]) {
-      grouped[slot.areaName] = [];
-    }
+    if (!grouped[slot.areaName]) grouped[slot.areaName] = [];
     grouped[slot.areaName].push(slot);
   });
   return grouped;
@@ -141,7 +143,6 @@ app.post('/login', async (req, res) => {
 
     if (user.role === 'admin') res.redirect('/dashboard');
     else res.redirect('/user-panel');
-
   } catch (err) {
     console.error('❌ Login error:', err);
     res.render('login', { error: 'Login failed! Please try again.' });
@@ -177,75 +178,173 @@ app.post('/register', async (req, res) => {
   }
 });
 
-app.post('/park-car', authenticateToken, async (req, res) => {
+// Forgot password page
+app.get('/forgot-password', (req, res) => {
+  res.render('forgot-password', {
+    successMessage: null,
+    errorMessage: null,
+  });
+});
+
+// Forgot password POST
+app.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.render('forgot-password', {
+      errorMessage: 'Please enter a valid email address',
+      successMessage: null,
+    });
+  }
+
   try {
-    const { vehicleNo } = req.body;
-    const updatedUser = await User.findOneAndUpdate({ username: req.user.username }, { vehicleNo }, { new: true });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.render('forgot-password', {
+        errorMessage: 'No account with that email found.',
+        successMessage: null,
+      });
+    }
 
-    if (!updatedUser) return res.status(404).send('❌ User not found');
+    const token = crypto.randomBytes(20).toString('hex');
+    const expireTime = Date.now() + 3600000; // 1 hour
 
-    res.redirect('/user-panel?success=Vehicle parked successfully!');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = expireTime;
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: 'Gmail',
+      auth: {
+        user: 'anmoltiwari621@gmail.com',
+        pass: 'zbibwvmywctyxuvb',
+      },
+    });
+
+    const resetUrl = `http://${req.headers.host}/reset-password?token=${token}`;
+
+    const mailOptions = {
+      to: user.email,
+      from: 'anmoltiwari621@gmail.com',
+      subject: 'Password Reset Request',
+      text: `You are receiving this because you (or someone else) requested the reset of your account password.\n\n
+Please click the following link, or paste it into your browser to complete the process:\n\n
+${resetUrl}\n\n
+If you did not request this, please ignore this email.\n`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.render('forgot-password', {
+      successMessage: 'An email has been sent with password reset instructions.',
+      errorMessage: null,
+    });
   } catch (err) {
-    console.error('❌ Error parking car:', err);
-    res.status(500).send('❌ Error parking car: ' + err.message);
+    console.error(err);
+    res.render('forgot-password', {
+      errorMessage: 'Something went wrong. Please try again later.',
+      successMessage: null,
+    });
   }
 });
 
-app.get('/dashboard', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') return res.redirect('/user-panel');
+// Reset password GET (show form)
+app.get('/reset-password', async (req, res) => {
+  const token = req.query.token;
+
+  if (!token) return res.send('Invalid or missing token.');
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) return res.send('Password reset token is invalid or has expired.');
+
+  res.render('reset-password', { token, errorMessage: null });
+});
+
+// Reset password POST (handle submission)
+app.post('/reset-password', async (req, res) => {
+  const { token, password, confirmPassword } = req.body;
+
+  if (!token) return res.send('Invalid request.');
+
+  if (password !== confirmPassword) {
+    return res.render('reset-password', {
+      token,
+      errorMessage: 'Passwords do not match.',
+    });
+  }
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) return res.send('Password reset token is invalid or has expired.');
+
+  // Hash the new password before saving
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  user.password = hashedPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+
+  await user.save();
+
+  res.send('Your password has been reset successfully. You may now <a href="/login">login</a>.');
+});
+
+// User panel (protected)
+app.get('/user-panel', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'user') return res.status(403).send('Access denied.');
 
   try {
+    const user = await User.findOne({ username: req.user.username });
     const slots = await ParkingSlot.find({});
     const groupedSlots = groupSlotsByArea(slots);
 
-    res.render('dashboard', { user: req.user.username, groupedSlots });
-  } catch (err) {
-    console.error('❌ Dashboard error:', err);
-    res.redirect('/login');
-  }
-});
-
-app.get('/user-panel', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.user.username });
-    const successMessage = req.query.success || null;
-    res.render('userPanel', { user, successMessage });
-  } catch (err) {
-    console.error("❌ Error loading user panel:", err);
-    res.redirect('/login');
-  }
-});
-
-// Admin creation, reset routes (optional)
-app.get('/create-admin', async (req, res) => {
-  try {
-    const existingAdmin = await User.findOne({ role: 'admin' });
-    if (existingAdmin) return res.send('⚠️ Admin already exists: ' + existingAdmin.username);
-
-    const hashedPassword = await bcrypt.hash(ADMIN_CONFIG.password, 10);
-    const newAdmin = new User({
-      username: ADMIN_CONFIG.username,
-      email: ADMIN_CONFIG.email,
-      password: hashedPassword,
-      mobile: ADMIN_CONFIG.mobile,
-      employeeId: ADMIN_CONFIG.employeeId,
-      role: 'admin',
+    res.render('user-panel', {
+      username: user.username,
+      vehicleNo: user.vehicleNo,
+      slots: groupedSlots,
     });
-
-    await newAdmin.save();
-    res.send(`✅ Admin user created: ${ADMIN_CONFIG.username}`);
   } catch (err) {
-    console.error('❌ Error creating admin:', err);
-    res.status(500).send('❌ Admin creation failed');
+    console.error(err);
+    res.status(500).send('Server error');
   }
 });
 
+// Admin dashboard (protected)
+app.get('/dashboard', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).send('Access denied.');
+
+  try {
+    const users = await User.find({});
+    const slots = await ParkingSlot.find({});
+    const groupedSlots = groupSlotsByArea(slots);
+
+    res.render('dashboard', {
+      users,
+      slots: groupedSlots,
+      admin: req.user,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
+// Logout
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
   res.redirect('/login');
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server started on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
