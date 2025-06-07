@@ -319,11 +319,16 @@ app.get('/user-panel', authenticateToken, async (req, res) => {
 
 // Admin dashboard (protected)
 app.get('/dashboard', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).send('Access denied.');
+  if (req.user.role !== 'admin') {
+    return res.status(403).send('Access denied.');
+  }
 
   try {
-    const users = await User.find({});
-    const slots = await ParkingSlot.find({});
+    const [users, slots] = await Promise.all([
+      User.find({}),
+      ParkingSlot.find({})
+    ]);
+
     const groupedSlots = groupSlotsByArea(slots);
 
     res.render('dashboard', {
@@ -332,10 +337,11 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
       admin: req.user,
     });
   } catch (err) {
-    console.error(err);
+    console.error('Dashboard fetch error:', err);
     res.status(500).send('Server error');
   }
 });
+
 
 // Logout
 app.get('/logout', (req, res) => {
