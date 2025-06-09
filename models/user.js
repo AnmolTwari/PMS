@@ -11,7 +11,11 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   reserPasswordExpires: Date,
 
+  assignedSlot: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ParkingSlot',
+    default: null,
+  },
 });
-
 
 module.exports = mongoose.model('User', userSchema);

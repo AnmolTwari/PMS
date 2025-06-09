@@ -8,8 +8,11 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cookieParser());
 app.set('view engine', 'ejs');
+app.use(express.static('public'));
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
 
@@ -348,6 +351,53 @@ app.get('/logout', (req, res) => {
   res.clearCookie('token');
   res.redirect('/login');
 });
+
+// Return list of available slots
+app.get('/available-slots', async (req, res) => {
+  try {
+    const slots = await ParkingSlot.find({ occupied: false });
+    res.json(slots);
+  } catch {
+    res.status(500).json({ error: 'Failed to get slots' });
+  }
+});
+
+// Handle booking
+app.post('/book-slot', authenticateToken, async (req, res) => {
+  const { slotId, vehicleNo } = req.body;
+
+  console.log("Incoming Booking Request:", { slotId, vehicleNo }); // ✅ Add this
+  const user = await User.findOne({ username: req.user.username });
+
+  // Check if user already has a vehicle assigned
+  if (user.vehicleNo) {
+    return res.status(400).json({ error: 'You have already booked a slot.' });
+  }
+  user.vehicleNo = vehicleNo;
+  await user.save();
+
+  if (!slotId || !vehicleNo) {
+    return res.status(400).json({ error: 'Missing data' });
+  }
+
+  try {
+    const slot = await ParkingSlot.findById(slotId);
+    if (!slot || slot.occupied) {
+      return res.status(400).json({ error: 'Slot not available' });
+    }
+
+    slot.occupied = true;
+    slot.carNumber = vehicleNo;
+    slot.bookingTime = new Date();
+    await slot.save();
+
+    res.json({ slotNumber: slot.slotNumber, areaName: slot.areaName });
+  } catch (err) {
+    console.error('Booking Error:', err); // ✅ Add error logging
+    res.status(500).json({ error: 'Booking failed' });
+  }
+});
+
 
 // Start server
 const PORT = process.env.PORT || 3000;
