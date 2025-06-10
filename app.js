@@ -311,6 +311,9 @@ app.get('/user-panel', authenticateToken, async (req, res) => {
 
     res.render('user-panel', {
       username: user.username,
+      email: user.email,
+      mobile: user.mobile,
+      employeeId: user.employeeId,
       vehicleNo: user.vehicleNo,
       slots: groupedSlots,
     });

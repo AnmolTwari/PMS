@@ -21,7 +21,7 @@
                 <div class="logo-symbol">P</div>
                 <div class="brand-name">ParkSmart Pro</div>
             </div>
-            <div class="executive-title">Welcome, John Richardson</div>
+            <div class="executive-title">Welcome, <%= username %>!</div>
             <div class="status-indicator">
                 <div class="status-dot"></div>
                 System Online • All Services Active
@@ -43,19 +43,19 @@
 
                 <div class="info-matrix">
                     <div class="info-cell">
-                        <div class="info-label">Executive ID</div>
+                        <div class="info-label">Employee ID</div>
                         <div class="info-value">
-                            <span>john.richardson</span>
+                            <span><%= employeeId %></span>
                             <span style="color: #4caf50;">●</span>
                         </div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Corporate Email</div>
-                        <div class="info-value">j.richardson@parksmart.com</div>
+                        <div class="info-value"><%= email %></div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Direct Line</div>
-                        <div class="info-value">+1 (555) 987-6543</div>
+                        <div class="info-value"><%= mobile %></div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Department</div>
@@ -79,7 +79,7 @@
                         <div class="info-cell">
                             <div class="info-label">Vehicle Registration</div>
                             <div class="info-value">
-                                <span>EXEC-2024-VIP</span>
+                                <span><%= vehicleNo %></span>
                                 <span style="color: #4fc3f7;">🅿️</span>
                             </div>
                         </div>

@@ -167,3 +167,34 @@
     }
   });
 
+  async function bookSlot(slotId) {
+    const vehicleNo = prompt("🚗 Enter your vehicle number (e.g., MH12AB1234):");
+    if (!vehicleNo) {
+      alert("❌ Booking cancelled.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/book-slot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId, vehicleNo }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // ✅ Booking succeeded
+        alert("✅ Slot booked successfully!\n\n🪪 Vehicle No: " + vehicleNo + "\n📍 Slot: " + data.slotNumber + "\n🅿️ Area: " + data.areaName);
+        window.location.reload();  // Refresh to update UI
+      } else {
+        // ❌ Booking failed (bad request)
+        alert("❌ Booking failed: " + data.error);
+      }
+    } catch (error) {
+      // ❌ Network/server error
+      alert("🚨 Server error. Try again later.");
+      console.error("Booking error:", error);
+    }
+  }
+
