@@ -335,6 +335,32 @@ app.post('/book-slot', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Booking failed' });
   }
 });
+app.get('/user-status', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'user') return res.status(403).send('Access denied');
+
+  try {
+    const slots = await ParkingSlot.find({});
+    const areas = {};
+
+    slots.forEach(slot => {
+      if (!areas[slot.areaName]) {
+        areas[slot.areaName] = { total: 0, occupied: 0 };
+      }
+      areas[slot.areaName].total++;
+      if (slot.occupied) areas[slot.areaName].occupied++;
+    });
+
+    Object.keys(areas).forEach(area => {
+      areas[area].available = areas[area].total - areas[area].occupied;
+    });
+
+    res.render('user-status', { username: req.user.username, statusData: areas });
+  } catch (err) {
+    console.error('❌ User Status error:', err);
+    res.status(500).send('Error loading parking status');
+  }
+});
+
 
 
 // Start server

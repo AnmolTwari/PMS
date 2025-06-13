@@ -197,4 +197,31 @@
       console.error("Booking error:", error);
     }
   }
+  document.addEventListener("DOMContentLoaded", () => {
+  const checkStatusBtn = document.getElementById("checkStatusBtn");
+  const modal = document.getElementById("statusModal");
+  const modalBody = document.getElementById("modalBody");
+  const closeModalBtn = document.getElementById("closeModalBtn");
+
+  checkStatusBtn.addEventListener("click", async () => {
+    modal.style.display = "block";
+    modalBody.innerHTML = "Loading...";
+
+    try {
+      const res = await fetch("/user-status");
+      const html = await res.text();
+      modalBody.innerHTML = html;
+    } catch (err) {
+      modalBody.innerHTML = "<p style='color:red;'>Failed to load status.</p>";
+    }
+  });
+
+  closeModalBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) modal.style.display = "none";
+  });
+});
 

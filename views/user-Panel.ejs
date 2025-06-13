@@ -9,7 +9,7 @@
 </head>
 
 <body>
-    
+
     <div class="alert-system" id="alertSystem">
     </div>
 
@@ -44,17 +44,23 @@
                     <div class="info-cell">
                         <div class="info-label">Employee ID</div>
                         <div class="info-value">
-                            <span><%= employeeId %></span>
+                            <span>
+                                <%= employeeId %>
+                            </span>
                             <span style="color: #4caf50;">●</span>
                         </div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Corporate Email</div>
-                        <div class="info-value"><%= email %></div>
+                        <div class="info-value">
+                            <%= email %>
+                        </div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Direct Line</div>
-                        <div class="info-value"><%= mobile %></div>
+                        <div class="info-value">
+                            <%= mobile %>
+                        </div>
                     </div>
                     <div class="info-cell">
                         <div class="info-label">Department</div>
@@ -78,7 +84,9 @@
                         <div class="info-cell">
                             <div class="info-label">Vehicle Registration</div>
                             <div class="info-value">
-                                <span><%= vehicleNo %></span>
+                                <span>
+                                    <%= vehicleNo %>
+                                </span>
                                 <span style="color: #4fc3f7;">🅿️</span>
                             </div>
                         </div>
@@ -131,18 +139,6 @@
         <!-- Executive Navigation -->
         <div class="executive-nav">
             <a href="#" class="nav-link">
-                <span>🏠</span>
-                Dashboard
-            </a>
-            <a href="#" class="nav-link">
-                <span>🚗</span>
-                Vehicle Management
-            </a>
-            <a href="#" class="nav-link">
-                <span>📊</span>
-                Reports
-            </a>
-            <a href="#" class="nav-link">
                 <span>⚙️</span>
                 Settings
             </a>
@@ -152,6 +148,14 @@
             </a>
         </div>
     </div>
+    <!-- User Status Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModalBtn">&times;</span>
+            <div id="modalBody">Loading status...</div>
+        </div>
+    </div>
+
 
     <script src="/js/user-Panel.js" defer></script>
 </body>
