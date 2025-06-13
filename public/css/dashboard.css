@@ -1,0 +1,36 @@
+ body { font-family: sans-serif; background: #f5f7fa; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+    .welcome { margin-bottom: 10px; text-align: right; color: #666; font-size: 1.02em; }
+    .logout-btn { background: #f87171; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; font-size: 1em; cursor: pointer; margin-left: 8px;}
+    .area-block { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px #0001; margin-bottom: 30px; padding: 18px; }
+    .area-title { font-size: 1.25em; color: #194185; margin: 0; cursor: pointer; display: inline-block; }
+    .area-title:hover { text-decoration: underline; }
+    .area-table-wrapper { display: none; margin-top: 20px; }
+    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+    .parking-slot { border: 1px solid #ddd; border-radius: 5px; padding: 10px; text-align: center; position: relative; height: 120px; display: flex; flex-direction: column; justify-content: space-between; }
+    .slot-available { background-color: #dcfce7; border-color: #15803d; }
+    .slot-occupied { background-color: #fee2e2; border-color: #b91c1c; }
+    .slot-number { font-weight: bold; font-size: 1.1em; }
+    .slot-status { margin: 5px 0; }
+    .occupied { color: #b91c1c; font-weight: bold;}
+    .available { color: #15803d; font-weight: bold;}
+    .emp-id { font-size: 0.9em; margin-bottom: 5px; }
+    .action-form { margin-top: 5px; }
+    .btn { background: #2563eb; color: #fff; border: none; border-radius: 3px; padding: 3px 10px; font-size: 0.9em; cursor: pointer; width: 100%; margin-top: 5px; }
+    .btn:hover { background: #1d4ed8; }
+    input[type="text"] { width: 100%; padding: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 3px; font-size: 0.9em; }
+    .caret { display: inline-block; margin-right: 6px; transition: transform 0.2s; }
+    .caret.down { transform: rotate(90deg); }
+
+    .status-container { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 30px; }
+    .status-card { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px #0001; padding: 15px; flex: 1; min-width: 200px; margin: 0 10px 10px 0; position: relative; }
+    .status-title { font-size: 1.1em; color: #194185; margin-top: 0; margin-bottom: 10px; text-align: center; }
+    .status-numbers { display: flex; justify-content: space-around; text-align: center; }
+    .status-item { padding: 8px; }
+    .status-value { font-size: 1.5em; font-weight: bold; display: block; }
+    .status-label { font-size: 0.85em; color: #666; }
+    .available-value { color: #15803d; }
+    .occupied-value { color: #b91c1c; }
+    .total-value { color: #1e40af; }
+    .occupancy-bar { height: 8px; background: #e5e7eb; border-radius: 4px; margin-top: 12px; overflow: hidden; }
+    .occupancy-fill { height: 100%; background: linear-gradient(90deg, #15803d, #b91c1c); transition: width 0.5s ease; }

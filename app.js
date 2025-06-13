@@ -1,3 +1,5 @@
+require('dotenv').config(); // Load environment variables
+
 const express = require('express');
 const app = express();
 const bcrypt = require('bcrypt');
@@ -13,16 +15,21 @@ app.use(cookieParser());
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
+// Load environment secrets
+const JWT_SECRET = process.env.JWT_SECRET;
+const MONGO_URI = process.env.MONGO_URI;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
+// Validate Mongo URI
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI not found in .env');
+  process.exit(1);
+}
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/parking_app', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('✅ MongoDB connected'))
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Schemas & Models
+// Schemas
 const userSchema = new mongoose.Schema({
   username: { type: String, unique: true, required: true },
   email: { type: String, unique: true, required: true },
@@ -31,8 +38,6 @@ const userSchema = new mongoose.Schema({
   employeeId: { type: String, unique: true, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   vehicleNo: { type: String, default: null },
-
-  // Fields for password reset
   resetPasswordToken: String,
   resetPasswordExpires: Date,
 });
@@ -43,21 +48,28 @@ const parkingSlotSchema = new mongoose.Schema({
   slotNumber: Number,
   occupied: Boolean,
   carNumber: String,
+  bookingTime: Date,
 });
 
 const User = mongoose.model('User', userSchema);
 const ParkingSlot = mongoose.model('ParkingSlot', parkingSlotSchema);
 
-// Initialize parking slots once if none exist
+// Initialize slots
 async function initializeParkingSlots() {
   const count = await ParkingSlot.countDocuments();
   if (count === 0) {
-    const slots = [
-      ...Array(50).fill().map((_, i) => ({ parkingAreaId: 1, areaName: 'Area 1', slotNumber: i + 1, occupied: false, carNumber: null })),
-      ...Array(50).fill().map((_, i) => ({ parkingAreaId: 2, areaName: 'Area 2', slotNumber: i + 1, occupied: false, carNumber: null })),
-      ...Array(50).fill().map((_, i) => ({ parkingAreaId: 3, areaName: 'Area 3', slotNumber: i + 1, occupied: false, carNumber: null })),
-      ...Array(50).fill().map((_, i) => ({ parkingAreaId: 4, areaName: 'Area 4', slotNumber: i + 1, occupied: false, carNumber: null })),
-    ];
+    const slots = [];
+    for (let area = 1; area <= 4; area++) {
+      for (let i = 1; i <= 50; i++) {
+        slots.push({
+          parkingAreaId: area,
+          areaName: `Area ${area}`,
+          slotNumber: i,
+          occupied: false,
+          carNumber: null,
+        });
+      }
+    }
     await ParkingSlot.insertMany(slots);
     console.log('✅ Parking slots initialized');
   }
@@ -66,14 +78,14 @@ initializeParkingSlots();
 
 // Admin config
 const ADMIN_CONFIG = {
-  username: process.env.ADMIN_USERNAME || 'superadmin',
-  password: process.env.ADMIN_PASSWORD || 'SecurePass123!',
-  email: process.env.ADMIN_EMAIL || 'admin@company.com',
-  mobile: process.env.ADMIN_MOBILE || '9876543210',
-  employeeId: process.env.ADMIN_EMPLOYEE_ID || 'EMP001',
+  username: process.env.ADMIN_USERNAME,
+  password: process.env.ADMIN_PASSWORD,
+  email: process.env.ADMIN_EMAIL,
+  mobile: process.env.ADMIN_MOBILE,
+  employeeId: process.env.ADMIN_EMPLOYEE_ID,
 };
 
-// Create initial admin user if not exists
+// Create admin if not exists
 async function createInitialAdmin() {
   try {
     const existingAdmin = await User.findOne({ role: 'admin' });
@@ -98,7 +110,7 @@ async function createInitialAdmin() {
 }
 createInitialAdmin();
 
-// JWT auth middleware
+// JWT Middleware
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.redirect('/login');
@@ -110,7 +122,6 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Helper function to group slots by area
 function groupSlotsByArea(slots) {
   const grouped = {};
   slots.forEach(slot => {
@@ -121,7 +132,6 @@ function groupSlotsByArea(slots) {
 }
 
 // Routes
-
 app.get('/', (req, res) => res.redirect('/login'));
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
@@ -130,10 +140,9 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ $or: [{ username }, { email: username }] });
-    if (!user) return res.render('login', { error: 'Invalid username/email or password' });
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.render('login', { error: 'Invalid username/email or password' });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.render('login', { error: 'Invalid username/email or password' });
+    }
 
     const token = jwt.sign({ username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 
@@ -144,8 +153,7 @@ app.post('/login', async (req, res) => {
       maxAge: 3600000,
     });
 
-    if (user.role === 'admin') res.redirect('/dashboard');
-    else res.redirect('/user-panel');
+    return res.redirect(user.role === 'admin' ? '/dashboard' : '/user-panel');
   } catch (err) {
     console.error('❌ Login error:', err);
     res.render('login', { error: 'Login failed! Please try again.' });
@@ -161,124 +169,85 @@ app.post('/register', async (req, res) => {
   }
 
   try {
-    const userExists = await User.findOne({ $or: [{ employeeId }, { username }, { email }] });
-    if (userExists) {
-      return res.render('register', { error: 'User with this employee ID, username, or email already exists' });
+    const exists = await User.findOne({ $or: [{ employeeId }, { username }, { email }] });
+    if (exists) {
+      return res.render('register', { error: 'User already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    let role = 'user';
-    if (username === ADMIN_CONFIG.username && email === ADMIN_CONFIG.email) role = 'admin';
+    const role = username === ADMIN_CONFIG.username && email === ADMIN_CONFIG.email ? 'admin' : 'user';
 
     const newUser = new User({ username, email, password: hashedPassword, mobile, employeeId, role });
     await newUser.save();
     res.redirect('/login');
-
   } catch (err) {
     console.error('❌ Registration error:', err);
-    res.render('register', { error: 'Registration failed. Please try again.' });
+    res.render('register', { error: 'Registration failed. Try again.' });
   }
 });
 
-// Forgot password page
 app.get('/forgot-password', (req, res) => {
-  res.render('forgot-password', {
-    successMessage: null,
-    errorMessage: null,
-  });
+  res.render('forgot-password', { errorMessage: null, successMessage: null });
 });
 
-// Forgot password POST
 app.post('/forgot-password', async (req, res) => {
   const { email } = req.body;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.render('forgot-password', {
-      errorMessage: 'Please enter a valid email address',
-      successMessage: null,
-    });
+    return res.render('forgot-password', { errorMessage: 'Invalid email', successMessage: null });
   }
 
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.render('forgot-password', {
-        errorMessage: 'No account with that email found.',
-        successMessage: null,
-      });
+      return res.render('forgot-password', { errorMessage: 'No account found', successMessage: null });
     }
 
     const token = crypto.randomBytes(20).toString('hex');
-    const expireTime = Date.now() + 3600000; // 1 hour
-
     user.resetPasswordToken = token;
-    user.resetPasswordExpires = expireTime;
+    user.resetPasswordExpires = Date.now() + 3600000;
     await user.save();
 
     const transporter = nodemailer.createTransport({
       service: 'Gmail',
       auth: {
-        user: 'anmoltiwari621@gmail.com',
-        pass: 'zbibwvmywctyxuvb',
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
     });
 
     const resetUrl = `http://${req.headers.host}/reset-password?token=${token}`;
-
     const mailOptions = {
       to: user.email,
-      from: 'anmoltiwari621@gmail.com',
-      subject: 'Password Reset Request',
-      text: `You are receiving this because you (or someone else) requested the reset of your account password.\n\n
-Please click the following link, or paste it into your browser to complete the process:\n\n
-${resetUrl}\n\n
-If you did not request this, please ignore this email.\n`,
+      from: process.env.EMAIL_USER,
+      subject: 'Password Reset',
+      text: `Reset your password here: ${resetUrl}`,
     };
 
     await transporter.sendMail(mailOptions);
-
-    res.render('forgot-password', {
-      successMessage: 'An email has been sent with password reset instructions.',
-      errorMessage: null,
-    });
+    res.render('forgot-password', { successMessage: 'Email sent', errorMessage: null });
   } catch (err) {
-    console.error(err);
-    res.render('forgot-password', {
-      errorMessage: 'Something went wrong. Please try again later.',
-      successMessage: null,
-    });
+    console.error('❌ Email error:', err);
+    res.render('forgot-password', { errorMessage: 'Error sending email', successMessage: null });
   }
 });
 
-// Reset password GET (show form)
 app.get('/reset-password', async (req, res) => {
-  const token = req.query.token;
-
-  if (!token) return res.send('Invalid or missing token.');
-
+  const { token } = req.query;
   const user = await User.findOne({
     resetPasswordToken: token,
     resetPasswordExpires: { $gt: Date.now() },
   });
 
-  if (!user) return res.send('Password reset token is invalid or has expired.');
-
+  if (!user) return res.send('Invalid or expired token.');
   res.render('reset-password', { token, errorMessage: null });
 });
 
-// Reset password POST (handle submission)
 app.post('/reset-password', async (req, res) => {
   const { token, password, confirmPassword } = req.body;
-
-  if (!token) return res.send('Invalid request.');
-
   if (password !== confirmPassword) {
-    return res.render('reset-password', {
-      token,
-      errorMessage: 'Passwords do not match.',
-    });
+    return res.render('reset-password', { token, errorMessage: 'Passwords do not match.' });
   }
 
   const user = await User.findOne({
@@ -286,76 +255,45 @@ app.post('/reset-password', async (req, res) => {
     resetPasswordExpires: { $gt: Date.now() },
   });
 
-  if (!user) return res.send('Password reset token is invalid or has expired.');
+  if (!user) return res.send('Token invalid or expired.');
 
-  // Hash the new password before saving
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  user.password = hashedPassword;
+  user.password = await bcrypt.hash(password, 10);
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
-
   await user.save();
 
-  res.send('Your password has been reset successfully. You may now <a href="/login">login</a>.');
+  res.send('✅ Password reset. <a href="/login">Login</a>.');
 });
 
-// User panel (protected)
 app.get('/user-panel', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'user') return res.status(403).send('Access denied.');
-
-  try {
-    const user = await User.findOne({ username: req.user.username });
-    const slots = await ParkingSlot.find({});
-    const groupedSlots = groupSlotsByArea(slots);
-
-    res.render('user-panel', {
-      username: user.username,
-      email: user.email,
-      mobile: user.mobile,
-      employeeId: user.employeeId,
-      vehicleNo: user.vehicleNo,
-      slots: groupedSlots,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
-  }
+  if (req.user.role !== 'user') return res.status(403).send('Access denied');
+  const user = await User.findOne({ username: req.user.username });
+  const slots = await ParkingSlot.find({});
+  res.render('user-panel', {
+    username: user.username,
+    email: user.email,
+    mobile: user.mobile,
+    employeeId: user.employeeId,
+    vehicleNo: user.vehicleNo,
+    slots: groupSlotsByArea(slots),
+  });
 });
 
-// Admin dashboard (protected)
 app.get('/dashboard', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).send('Access denied.');
-  }
-
-  try {
-    const [users, slots] = await Promise.all([
-      User.find({}),
-      ParkingSlot.find({})
-    ]);
-
-    const groupedSlots = groupSlotsByArea(slots);
-
-    res.render('dashboard', {
-      users,
-      slots: groupedSlots,
-      admin: req.user,
-    });
-  } catch (err) {
-    console.error('Dashboard fetch error:', err);
-    res.status(500).send('Server error');
-  }
+  if (req.user.role !== 'admin') return res.status(403).send('Access denied');
+  const [users, slots] = await Promise.all([User.find({}), ParkingSlot.find({})]);
+  res.render('dashboard', {
+    users,
+    slots: groupSlotsByArea(slots),
+    admin: req.user,
+  });
 });
 
-
-// Logout
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
   res.redirect('/login');
 });
 
-// Return list of available slots
 app.get('/available-slots', async (req, res) => {
   try {
     const slots = await ParkingSlot.find({ occupied: false });
@@ -365,22 +303,16 @@ app.get('/available-slots', async (req, res) => {
   }
 });
 
-// Handle booking
 app.post('/book-slot', authenticateToken, async (req, res) => {
   const { slotId, vehicleNo } = req.body;
 
-  console.log("Incoming Booking Request:", { slotId, vehicleNo }); // ✅ Add this
-  const user = await User.findOne({ username: req.user.username });
-
-  // Check if user already has a vehicle assigned
-  if (user.vehicleNo) {
-    return res.status(400).json({ error: 'You have already booked a slot.' });
-  }
-  user.vehicleNo = vehicleNo;
-  await user.save();
-
   if (!slotId || !vehicleNo) {
     return res.status(400).json({ error: 'Missing data' });
+  }
+
+  const user = await User.findOne({ username: req.user.username });
+  if (user.vehicleNo) {
+    return res.status(400).json({ error: 'You have already booked a slot.' });
   }
 
   try {
@@ -394,9 +326,12 @@ app.post('/book-slot', authenticateToken, async (req, res) => {
     slot.bookingTime = new Date();
     await slot.save();
 
+    user.vehicleNo = vehicleNo;
+    await user.save();
+
     res.json({ slotNumber: slot.slotNumber, areaName: slot.areaName });
   } catch (err) {
-    console.error('Booking Error:', err); // ✅ Add error logging
+    console.error('Booking Error:', err);
     res.status(500).json({ error: 'Booking failed' });
   }
 });
