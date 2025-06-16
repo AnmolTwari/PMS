@@ -267,17 +267,29 @@ app.post('/reset-password', async (req, res) => {
 
 app.get('/user-panel', authenticateToken, async (req, res) => {
   if (req.user.role !== 'user') return res.status(403).send('Access denied');
-  const user = await User.findOne({ username: req.user.username });
-  const slots = await ParkingSlot.find({});
-  res.render('user-panel', {
-    username: user.username,
-    email: user.email,
-    mobile: user.mobile,
-    employeeId: user.employeeId,
-    vehicleNo: user.vehicleNo,
-    slots: groupSlotsByArea(slots),
-  });
+
+  try {
+    const user = await User.findOne({ username: req.user.username });
+    const slots = await ParkingSlot.find({});
+
+    // Find the slot booked by the current user's vehicle (if any)
+    const bookedSlot = await ParkingSlot.findOne({ carNumber: user.vehicleNo });
+
+    res.render('user-panel', {
+      username: user.username,
+      email: user.email,
+      mobile: user.mobile,
+      employeeId: user.employeeId,
+      vehicleNo: user.vehicleNo,
+      slots: groupSlotsByArea(slots),
+      bookedSlot: bookedSlot || null, // Ensure it's defined
+    });
+  } catch (err) {
+    console.error('❌ Error loading user panel:', err);
+    res.status(500).send('Failed to load user panel');
+  }
 });
+
 
 app.get('/dashboard', authenticateToken, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).send('Access denied');
@@ -360,7 +372,46 @@ app.get('/user-status', authenticateToken, async (req, res) => {
     res.status(500).send('Error loading parking status');
   }
 });
+// Release the currently‑parked car’s slot
+app.post('/release-slot', async (req, res) => {
+  let { vehicleNo } = req.body;            // value typed in the form
+  vehicleNo = vehicleNo.trim();            // keep it exactly as entered
+  console.log('🔍 Received vehicle number:', vehicleNo);
 
+  try {
+    // 👉 Search by carNumber (the correct field) with a flexible regex match
+    const slot = await ParkingSlot.findOne({
+      carNumber: { $regex: vehicleNo, $options: 'i' }   // partial, case‑insensitive
+    });
+
+    if (!slot) {
+      console.log('❌ No slot found for:', vehicleNo);
+      return res.status(404).json({
+        message: 'No slot found for this vehicle number.'
+      });
+    }
+
+    // Mark the slot as free
+    slot.occupied    = false;
+    slot.carNumber   = null;
+    slot.bookingTime = null;               // clear timestamp if you store it
+    await slot.save();
+
+    // Clear the user’s vehicleNo so they can book again
+    await User.updateOne({ vehicleNo }, { $set: { vehicleNo: null } });
+
+    console.log(`✅ Released Slot ${slot.slotNumber} in ${slot.areaName}`);
+    return res.status(200).json({
+      message: `Slot ${slot.slotNumber} in ${slot.areaName} released successfully.`
+    });
+
+  } catch (err) {
+    console.error('🚨 Release‑slot error:', err);
+    return res.status(500).json({
+      message: 'Server error while releasing slot.'
+    });
+  }
+});
 
 
 // Start server

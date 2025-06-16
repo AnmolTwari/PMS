@@ -10,8 +10,7 @@
 
 <body>
 
-    <div class="alert-system" id="alertSystem">
-    </div>
+    <div class="alert-system" id="alertSystem"></div>
 
     <div class="container">
         <!-- Executive Header -->
@@ -71,15 +70,18 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Vehicle Status -->
+                <!-- Vehicle Info Section -->
                 <div class="vehicle-status" id="vehicleStatus">
                     <div class="vehicle-content">
                         <div class="card-header" style="margin-bottom: 20px;">
                             <div class="card-icon"
                                 style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);">🚗</div>
-                            <div class="card-title"
-                                style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                                Active Vehicle</div>
+                            <div class="card-title" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+                                -webkit-background-clip: text;
+                                -webkit-text-fill-color: transparent;
+                                background-clip: text;">
+                                Active Vehicle
+                            </div>
                         </div>
                         <div class="info-cell">
                             <div class="info-label">Vehicle Registration</div>
@@ -91,6 +93,36 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Reservation Slot Details (Conditionally Rendered) -->
+                <div id="reservationDetailsContainer" class="reservation-details">
+                    <% if (bookedSlot) { %>
+                        <div class="reservation-card">
+                            <h3>🚗 Reserved Parking Details</h3>
+                            <p><strong>Parking Area:</strong>
+                                <%= bookedSlot.areaName %>
+                            </p>
+                            <p><strong>Slot Number:</strong>
+                                <%= bookedSlot.slotNumber %>
+                            </p>
+                            <p><strong>Reservation Time:</strong>
+                                <%= bookedSlot.bookingTime ? bookedSlot.bookingTime.toLocaleString() : 'N/A' %>
+                            </p>
+
+                            <form id="releaseForm">
+                                <input type="hidden" name="vehicleNo" value="<%= vehicleNo %>" />
+                                <button type="submit" class="btn btn-danger" id="releaseSlotBtn">
+                                    ❌ Release Slot
+                                </button>
+                            </form>
+                        </div>
+
+                        <% } else { %>
+                            <div class="reservation-card">
+                                <p>No active parking reservation.</p>
+                            </div>
+                            <% } %>
                 </div>
             </div>
 
@@ -108,10 +140,21 @@
                 <div class="form-container">
                     <form id="parkingForm">
                         <div class="form-group">
+                            <label class="form-label">Select Parking Area</label>
+                            <select id="parkingAreaSelect" class="form-input" required>
+                                <option value="" disabled selected>-- Select Parking Area --</option>
+                                <option value="Area 1">Parking Area 1</option>
+                                <option value="Area 2">Parking Area 2</option>
+                                <option value="Area 3">Parking Area 3</option>
+                                <option value="Area 4">Parking Area 4</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label class="form-label">Select Parking Slot</label>
                             <select name="slotId" id="slotSelect" class="form-input" required>
                                 <option value="" disabled selected>-- Select a Slot --</option>
-                                <!-- dynamically add options here -->
+                                <!-- Slots appear here dynamically -->
                             </select>
                         </div>
 
@@ -123,12 +166,10 @@
 
                         <div class="btn-group">
                             <button type="submit" class="btn btn-primary">
-                                <span>🅿️</span>
-                                Reserve Parking
+                                <span>🅿️</span> Reserve Parking
                             </button>
                             <button type="button" class="btn btn-secondary" id="checkStatusBtn">
-                                <span>📊</span>
-                                Check Status
+                                <span>📊</span> Check Status
                             </button>
                         </div>
                     </form>
@@ -138,16 +179,11 @@
 
         <!-- Executive Navigation -->
         <div class="executive-nav">
-            <a href="#" class="nav-link">
-                <span>⚙️</span>
-                Settings
-            </a>
-            <a href="#" class="nav-link">
-                <span>🚪</span>
-                Logout
-            </a>
+            <a href="#" class="nav-link"><span>⚙️</span> Settings</a>
+            <a href="#" class="nav-link"><span>🚪</span> Logout</a>
         </div>
     </div>
+
     <!-- User Status Modal -->
     <div id="statusModal" class="modal">
         <div class="modal-content">
@@ -155,7 +191,6 @@
             <div id="modalBody">Loading status...</div>
         </div>
     </div>
-
 
     <script src="/js/user-Panel.js" defer></script>
 </body>
