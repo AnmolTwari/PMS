@@ -5,24 +5,19 @@ function showAlert(message, type = 'success') {
   alert.className = 'popup-alert';
   alert.innerHTML = `
     <div class="popup-header">
-  ${type === 'success' ? '✅ Success' : '❌ Error'}
-</div>
-
-    <div class="popup-message">
-      ${message}
+      ${type === 'success' ? '✅ Success' : '❌ Error'}
     </div>
+    <div class="popup-message">${message}</div>
   `;
   alertSystem.appendChild(alert);
 
   setTimeout(() => {
     alert.classList.add('fade-out');
-    setTimeout(() => {
-      alert.remove();
-    }, 300);
+    setTimeout(() => alert.remove(), 300);
   }, 3000);
 }
 
-// Fetch available slots and populate select dropdown
+// Fetch and show all available slots (sorted)
 async function fetchAvailableSlots() {
   try {
     const response = await fetch('/available-slots');
@@ -32,24 +27,26 @@ async function fetchAvailableSlots() {
     const slotSelect = document.getElementById('slotSelect');
     slotSelect.innerHTML = `<option value="" disabled selected>-- Select a Slot --</option>`;
 
-    slots.forEach(slot => {
-      if (!slot.occupied) {
-        const option = document.createElement('option');
-        option.value = slot._id;
-        option.textContent = `Area: ${slot.areaName} - Slot No: ${slot.slotNumber}`;
-        slotSelect.appendChild(option);
-      }
+    const availableSlots = slots.filter(slot => !slot.occupied);
+    availableSlots.sort((a, b) => Number(a.slotNumber) - Number(b.slotNumber));
+
+    availableSlots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot._id;
+      option.textContent = `Area: ${slot.areaName} - Slot No: ${slot.slotNumber}`;
+      slotSelect.appendChild(option);
     });
 
-    if (slotSelect.options.length === 1) {
+    if (availableSlots.length === 0) {
       slotSelect.innerHTML = `<option disabled>No slots available</option>`;
     }
   } catch (err) {
+    console.error(err);
     showAlert('Error loading slots', 'error');
   }
 }
 
-// Handle parking form submit
+// Handle form submit for booking
 document.getElementById('parkingForm').addEventListener('submit', async function (e) {
   e.preventDefault();
 
@@ -57,12 +54,8 @@ document.getElementById('parkingForm').addEventListener('submit', async function
   const vehicleNo = this.vehicleNo.value.trim();
   const slotId = this.slotSelect.value;
 
-  if (!vehicleNo) {
-    showAlert('Please enter a vehicle registration number', 'error');
-    return;
-  }
-  if (!slotId) {
-    showAlert('Please select a parking slot', 'error');
+  if (!vehicleNo || !slotId) {
+    showAlert('Please enter vehicle number and select slot', 'error');
     return;
   }
 
@@ -72,21 +65,19 @@ document.getElementById('parkingForm').addEventListener('submit', async function
     const response = await fetch('/book-slot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vehicleNo, slotId }),
+      body: JSON.stringify({ vehicleNo, slotId })
     });
 
     const data = await response.json();
     loader.classList.remove('active');
 
     if (response.ok) {
-      showAlert(`Slot ${data.slotNumber} booked successfully for vehicle: ${vehicleNo} in ${data.areaName}`);
+      showAlert(`Slot ${data.slotNumber} booked for ${vehicleNo} in ${data.areaName}`);
       this.reset();
       fetchAvailableSlots();
 
-      const cardContainer = document.getElementById('reservationDetailsContainer');
       const now = new Date().toLocaleString();
-
-      cardContainer.innerHTML = `
+      document.getElementById('reservationDetailsContainer').innerHTML = `
         <div class="reservation-card">
           <h3>✅ Parking Confirmed</h3>
           <p><strong>🕒 Parked At:</strong> ${now}</p>
@@ -104,74 +95,37 @@ document.getElementById('parkingForm').addEventListener('submit', async function
   }
 });
 
-// Main DOMContentLoaded setup
-document.addEventListener('DOMContentLoaded', () => {
-  // Profile loader
-  const profileLoader = document.getElementById('profileLoader');
-  profileLoader.classList.add('active');
-  setTimeout(() => {
-    profileLoader.classList.remove('active');
-    showAlert('Welcome to ParkSmart Pro Executive Dashboard');
-  }, 2000);
+// Slot filtering by parking area (with sort)
+document.getElementById('parkingAreaSelect').addEventListener('change', async function () {
+  const selectedArea = this.value;
+  const slotSelect = document.getElementById('slotSelect');
+  slotSelect.innerHTML = '<option value="" disabled selected>-- Loading slots... --</option>';
 
-  // Parking area slot filtering
-  document.getElementById('parkingAreaSelect').addEventListener('change', async function () {
-    const selectedArea = this.value;
-    const slotSelect = document.getElementById('slotSelect');
-    slotSelect.innerHTML = '<option value="" disabled selected>-- Loading slots... --</option>';
+  try {
+    const response = await fetch('/available-slots');
+    const slots = await response.json();
+    const filteredSlots = slots.filter(slot => !slot.occupied && slot.areaName === selectedArea);
+    filteredSlots.sort((a, b) => Number(a.slotNumber) - Number(b.slotNumber));
 
-    try {
-      const response = await fetch('/available-slots');
-      const slots = await response.json();
-      const filteredSlots = slots.filter(slot => !slot.occupied && slot.areaName === selectedArea);
-
-      if (filteredSlots.length === 0) {
-        slotSelect.innerHTML = '<option disabled>No available slots in this area</option>';
-        return;
-      }
-
-      slotSelect.innerHTML = '<option value="" disabled selected>-- Select a Slot --</option>';
-      filteredSlots.forEach(slot => {
-        const option = document.createElement('option');
-        option.value = slot._id;
-        option.textContent = `Slot ${slot.slotNumber}`;
-        slotSelect.appendChild(option);
-      });
-    } catch (error) {
-      console.error(error);
-      slotSelect.innerHTML = '<option disabled>Error loading slots</option>';
+    if (filteredSlots.length === 0) {
+      slotSelect.innerHTML = '<option disabled>No available slots in this area</option>';
+      return;
     }
-  });
 
-  // Status Modal logic
-  const checkStatusBtn = document.getElementById("checkStatusBtn");
-  const modal = document.getElementById("statusModal");
-  const modalBody = document.getElementById("modalBody");
-  const closeModalBtn = document.getElementById("closeModalBtn");
+    slotSelect.innerHTML = '<option value="" disabled selected>-- Select a Slot --</option>';
+    filteredSlots.forEach(slot => {
+      const option = document.createElement('option');
+      option.value = slot._id;
+      option.textContent = `Slot ${slot.slotNumber}`;
+      slotSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error(error);
+    slotSelect.innerHTML = '<option disabled>Error loading slots</option>';
+  }
+});
 
-  checkStatusBtn.addEventListener("click", async () => {
-    modal.style.display = "block";
-    modalBody.innerHTML = "Loading...";
-
-    try {
-      const res = await fetch("/user-status");
-      const html = await res.text();
-      modalBody.innerHTML = html;
-    } catch (err) {
-      modalBody.innerHTML = "<p style='color:red;'>Failed to load status.</p>";
-    }
-  });
-
-  closeModalBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-
-  window.addEventListener("click", (e) => {
-    if (e.target === modal) modal.style.display = "none";
-  });
-
-  // Release form handler
-  // Release form handler
+// Release slot logic
 const releaseForm = document.getElementById('releaseForm');
 if (releaseForm) {
   releaseForm.addEventListener('submit', async (e) => {
@@ -194,22 +148,12 @@ if (releaseForm) {
 
       if (res.ok) {
         showAlert(data.message, 'success');
-
-        // Clear reservation card
-        const cardContainer = document.getElementById('reservationDetailsContainer');
-        if (cardContainer) {
-          cardContainer.innerHTML = '';
-        }
-
-        // Reset form
+        document.getElementById('reservationDetailsContainer').innerHTML = '';
         releaseForm.reset();
-
-        // Refresh slot dropdown
         fetchAvailableSlots();
       } else {
         showAlert(data.message || 'Release failed.', 'error');
       }
-
     } catch (error) {
       showAlert('Server error during release', 'error');
       console.error('Release error:', error);
@@ -217,51 +161,73 @@ if (releaseForm) {
   });
 }
 
+// Slot status modal
+const checkStatusBtn = document.getElementById("checkStatusBtn");
+const modal = document.getElementById("statusModal");
+const modalBody = document.getElementById("modalBody");
+const closeModalBtn = document.getElementById("closeModalBtn");
 
-  // Nav links handler
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function (e) {
-      if (this.textContent.trim().includes('Logout')) {
-        e.preventDefault();
-        if (confirm('Are you sure you want to logout?')) {
-          showAlert('Logging out...');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1000);
-        }
-      } else {
-        e.preventDefault();
-        showAlert(`Navigating to ${this.textContent.trim()}`);
+checkStatusBtn.addEventListener("click", async () => {
+  modal.style.display = "block";
+  modalBody.innerHTML = "Loading...";
+
+  try {
+    const res = await fetch("/user-status");
+    const html = await res.text();
+    modalBody.innerHTML = html;
+  } catch (err) {
+    modalBody.innerHTML = "<p style='color:red;'>Failed to load status.</p>";
+  }
+});
+
+closeModalBtn.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+window.addEventListener("click", (e) => {
+  if (e.target === modal) modal.style.display = "none";
+});
+
+// Nav link handler
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', function (e) {
+    if (this.textContent.trim().includes('Logout')) {
+      e.preventDefault();
+      if (confirm('Are you sure you want to logout?')) {
+        showAlert('Logging out...');
+        setTimeout(() => window.location.href = '/login', 1000);
       }
-    });
-  });
-
-  // Input border reset
-  document.querySelectorAll('.form-input').forEach(input => {
-    input.addEventListener('input', function () {
-      this.style.borderColor = 'rgba(102, 126, 234, 0.2)';
-    });
-  });
-
-  // Keyboard form navigation
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target.classList.contains('form-input')) {
-      const form = e.target.closest('form');
-      if (form) {
-        const inputs = Array.from(form.querySelectorAll('.form-input'));
-        const currentIndex = inputs.indexOf(e.target);
-
-        if (currentIndex < inputs.length - 1) {
-          inputs[currentIndex + 1].focus();
-        } else {
-          form.dispatchEvent(new Event('submit'));
-        }
-      }
+    } else {
+      e.preventDefault();
+      showAlert(`Navigating to ${this.textContent.trim()}`);
     }
   });
 });
 
-// Direct slot booking from UI card
+// Input border reset
+document.querySelectorAll('.form-input').forEach(input => {
+  input.addEventListener('input', function () {
+    this.style.borderColor = 'rgba(102, 126, 234, 0.2)';
+  });
+});
+
+// Keyboard navigation in forms
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && e.target.classList.contains('form-input')) {
+    const form = e.target.closest('form');
+    if (form) {
+      const inputs = Array.from(form.querySelectorAll('.form-input'));
+      const currentIndex = inputs.indexOf(e.target);
+
+      if (currentIndex < inputs.length - 1) {
+        inputs[currentIndex + 1].focus();
+      } else {
+        form.dispatchEvent(new Event('submit'));
+      }
+    }
+  }
+});
+
+// Direct booking from card
 async function bookSlot(slotId) {
   const vehicleNo = prompt("🚗 Enter your vehicle number (e.g., MH12AB1234):");
   if (!vehicleNo) {
@@ -289,3 +255,15 @@ async function bookSlot(slotId) {
     console.error("Booking error:", error);
   }
 }
+
+// Initial setup
+document.addEventListener('DOMContentLoaded', () => {
+  fetchAvailableSlots();
+
+  const profileLoader = document.getElementById('profileLoader');
+  profileLoader.classList.add('active');
+  setTimeout(() => {
+    profileLoader.classList.remove('active');
+    showAlert('Welcome to ParkSmart Pro Executive Dashboard');
+  }, 2000);
+});
