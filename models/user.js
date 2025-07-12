@@ -16,6 +16,12 @@ const userSchema = new mongoose.Schema({
     ref: 'ParkingSlot',
     default: null,
   },
+
+  // ✅ Track logged-in status
+  isLoggedIn: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model('User', userSchema);

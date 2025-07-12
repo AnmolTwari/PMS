@@ -22,47 +22,25 @@ body {
   border-radius: 8px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
-
+.nav{
+  background-color: #1e40af;
+}
 /* Header */
-.executive-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #ddd;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-  gap: 10px;
+/* .logo img{
+  height: 100px;
+} */
+ /* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
 }
 
-.brand-identity {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: #1e40af; /* a calm blue */
+/* Apply scroll margin to all sections */
+section {
+  scroll-margin-top: 100px; /* adjust to match or slightly exceed navbar height */
 }
 
-.logo-symbol {
-  background: #1e40af;
-  color: white;
-  font-weight: 700;
-  font-size: 1.5rem;
-  padding: 6px 12px;
-  border-radius: 6px;
-  user-select: none;
-}
 
-.executive-title {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #444;
-  flex-grow: 1;
-  text-align: center;
-}
-
-.status-indicator {
+.status-indicator { 
   font-size: 0.9rem;
   color: #4caf50; /* green */
   display: flex;
@@ -322,3 +300,105 @@ body {
 }
 
 
+/* Responsive */
+@media (max-width: 700px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .executive-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .executive-title {
+    text-align: center;
+    order: 3;
+  }
+
+  .status-indicator {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1024px) and (min-width: 701px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-container {
+    flex-direction: column;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-link {
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .card-header {
+    font-size: 1rem;
+    gap: 6px;
+  }
+
+  .form-input {
+    font-size: 0.95rem;
+    padding: 6px 8px;
+  }
+
+  .btn {
+    font-size: 0.95rem;
+    padding: 8px 14px;
+  }
+
+  .popup-alert {
+    padding: 15px 20px;
+    min-width: 250px;
+  }
+
+  .popup-header {
+    font-size: 1rem;
+  }
+
+  .popup-message {
+    font-size: 0.9rem;
+  }
+
+  .reservation-card {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .nav-link {
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+}
+.hover-link:hover {
+      color: #93c5fd !important;
+      text-decoration: underline;
+      transition: color 0.3s;
+    }
+
+    .hover-social:hover {
+      color: #60a5fa !important;
+      transform: scale(1.2);
+      transition: all 0.2s ease-in-out;
+    }
+
+    

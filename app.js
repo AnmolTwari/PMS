@@ -140,11 +140,16 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   try {
     const user = await User.findOne({ $or: [{ username }, { email: username }] });
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.render('login', { error: 'Invalid username/email or password' });
     }
 
-    const token = jwt.sign({ username: user.username, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { username: user.username, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -293,13 +298,17 @@ app.get('/user-panel', authenticateToken, async (req, res) => {
 
 app.get('/dashboard', authenticateToken, async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).send('Access denied');
+
   const [users, slots] = await Promise.all([User.find({}), ParkingSlot.find({})]);
+
   res.render('dashboard', {
     users,
     slots: groupSlotsByArea(slots),
     admin: req.user,
+    releaseSuccess: req.query.releaseSuccess ? true : false
   });
 });
+
 
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
@@ -374,42 +383,121 @@ app.get('/user-status', authenticateToken, async (req, res) => {
 });
 // Release the currently‑parked car’s slot
 app.post('/release-slot', async (req, res) => {
-  let { vehicleNo } = req.body;            // value typed in the form
-  vehicleNo = vehicleNo.trim();            // keep it exactly as entered
-  console.log('🔍 Received vehicle number:', vehicleNo);
+  let { vehicleNo } = req.body;
+  vehicleNo = vehicleNo.trim();
 
   try {
-    // 👉 Search by carNumber (the correct field) with a flexible regex match
-    const slot = await ParkingSlot.findOne({
-      carNumber: { $regex: vehicleNo, $options: 'i' }   // partial, case‑insensitive
-    });
+    const slot = await ParkingSlot.findOne({ carNumber: { $regex: vehicleNo, $options: 'i' } });
 
     if (!slot) {
-      console.log('❌ No slot found for:', vehicleNo);
-      return res.status(404).json({
-        message: 'No slot found for this vehicle number.'
-      });
+      return res.status(404).json({ message: 'No slot found for this vehicle number.' });
     }
 
-    // Mark the slot as free
-    slot.occupied    = false;
-    slot.carNumber   = null;
-    slot.bookingTime = null;               // clear timestamp if you store it
+    slot.occupied = false;
+    slot.carNumber = null;
+    slot.bookingTime = null;
     await slot.save();
 
-    // Clear the user’s vehicleNo so they can book again
-    await User.updateOne({ vehicleNo }, { $set: { vehicleNo: null } });
+    await User.updateOne(
+      { vehicleNo: vehicleNo },
+      {
+        $set: { vehicleNo: null },
+        $unset: { bookedSlot: "" }
+      }
+    );
 
-    console.log(`✅ Released Slot ${slot.slotNumber} in ${slot.areaName}`);
-    return res.status(200).json({
-      message: `Slot ${slot.slotNumber} in ${slot.areaName} released successfully.`
-    });
+    console.log(`Slot released: ${slot.slotNumber} in ${slot.areaName}`);
+
+    // ✅ Correct: Respond with JSON for fetch()
+    return res.json({ message: 'Slot released successfully.' });
 
   } catch (err) {
-    console.error('🚨 Release‑slot error:', err);
-    return res.status(500).json({
-      message: 'Server error while releasing slot.'
+    console.error(err);
+    return res.status(500).json({ message: 'Server error while releasing slot.' });
+  }
+});
+
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+
+app.post('/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+
+  const mailOptions = {
+    from: `"${name}" <${process.env.EMAIL_USER}>`,  // Display user name, real sender is your Gmail
+    to: 'weparksy@gmail.com',
+    replyTo: email,  // 👈 When you hit "Reply", it'll go to the user's email
+    subject: `New Contact Message from ${name} - ${subject}`,
+    text: `
+You have received a new message from ParkSy contact form.
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+    `
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log(error);
+      res.send('Something went wrong. Please try again later.');
+    } else {
+      console.log('Email sent: ' + info.response);
+      res.render('thank-you', { redirectTo: '/' }); // or '/dashboard' or any page
+
+    }
+  });
+});
+app.post('/assign', async (req, res) => {
+  const { area, slotNumber, employeeId } = req.body;
+
+  try {
+    const slot = await ParkingSlot.findOneAndUpdate(
+      { areaName: area, slotNumber: parseInt(slotNumber) },
+      {
+        occupied: true,
+        employeeId,
+        carNumber: `CAR-${employeeId}`, // or get from DB if needed
+        bookingTime: new Date()
+      },
+      { new: true }
+    );
+
+    if (!slot) {
+      return res.status(404).json({ message: 'Slot not found.' });
+    }
+
+    await User.updateOne(
+      { employeeId },
+      {
+        $set: {
+          vehicleNo: `CAR-${employeeId}`,
+          bookedSlot: {
+            area,
+            slotNumber: parseInt(slotNumber)
+          }
+        }
+      }
+    );
+
+    console.log(`Slot assigned: ${slot.slotNumber} in ${slot.areaName} to ${employeeId}`);
+    res.json({
+      message: 'Slot assigned successfully.',
+      vehicleNo: `CAR-${employeeId}`
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error assigning slot.' });
   }
 });
 

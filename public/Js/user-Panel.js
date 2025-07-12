@@ -190,18 +190,19 @@ window.addEventListener("click", (e) => {
 // Nav link handler
 document.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', function (e) {
-    if (this.textContent.trim().includes('Logout')) {
+    const text = this.textContent.trim();
+
+    if (text.includes('Logout')) {
       e.preventDefault();
       if (confirm('Are you sure you want to logout?')) {
         showAlert('Logging out...');
         setTimeout(() => window.location.href = '/login', 1000);
       }
-    } else {
-      e.preventDefault();
-      showAlert(`Navigating to ${this.textContent.trim()}`);
     }
+    // ✅ Allow normal scroll behavior for section links
   });
 });
+
 
 // Input border reset
 document.querySelectorAll('.form-input').forEach(input => {

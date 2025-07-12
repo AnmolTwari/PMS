@@ -1,106 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Parking Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/css/dashboard.css">
-  <script>
-    function toggleArea(areaIdx) {
-      const wrapper = document.getElementById('area-table-' + areaIdx);
-      const caret = document.getElementById('caret-' + areaIdx);
-      wrapper.style.display = wrapper.style.display === 'block' ? 'none' : 'block';
-      caret.classList.toggle('down');
-    }
-
-    window.onload = function() {
-      // Optional: any JS functionality you want to add on load
-    };
-  </script>
 </head>
+
 <body>
   <div class="container">
     <div class="welcome">
-      Welcome, <%= admin.name %>!
+      Welcome, <%= admin.username %>!
       <a href="/logout"><button class="logout-btn">Logout</button></a>
     </div>
+
     <h2 style="text-align:center;">Employee Parking Dashboard</h2>
 
-    <!-- STATUS OVERVIEW -->
-    <div class="status-container">
-      <% 
-        const areas = ['Area 1', 'Area 2', 'Area 3', 'Area 4'];
-        areas.forEach((area, index) => {
-          const total = 50;
-          const occupied = (slots[area] || []).filter(slot => slot.occupied).length;
-          const available = total - occupied;
-          const percent = Math.round((occupied / total) * 100);
-      %>
-        <div class="status-card">
-          <h3 class="status-title"><%= area %> Status</h3>
-          <div class="status-numbers">
-            <div class="status-item">
-              <span class="status-value available-value"><%= available %></span>
-              <span class="status-label">Available</span>
-            </div>
-            <div class="status-item">
-              <span class="status-value occupied-value"><%= occupied %></span>
-              <span class="status-label">Occupied</span>
-            </div>
-            <div class="status-item">
-              <span class="status-value total-value"><%= total %></span>
-              <span class="status-label">Total</span>
-            </div>
+    <!-- ✅ Real-Time User Stats -->
+  </div>
+
+  <!-- STATUS OVERVIEW -->
+  <div class="status-container">
+    <% const areas = ['Area 1', 'Area 2', 'Area 3', 'Area 4']; areas.forEach((area, index) => {
+      const total = 50;
+      const occupied = (slots[area] || []).filter(slot => slot.occupied).length;
+      const available = total - occupied;
+      const percent = Math.round((occupied / total) * 100);
+    %>
+      <div class="status-card">
+        <h3 class="status-title"><%= area %> Status</h3>
+        <div class="status-numbers">
+          <div class="status-item">
+            <span class="status-value available-value"><%= available %></span>
+            <span class="status-label">Available</span>
           </div>
-          <div class="occupancy-bar">
-            <div class="occupancy-fill" style="width: <%= percent %>%"></div>
+          <div class="status-item">
+            <span class="status-value occupied-value"><%= occupied %></span>
+            <span class="status-label">Occupied</span>
           </div>
-          <div style="text-align: center; margin-top: 5px; font-size: 0.9em;">
-            Occupancy: <%= percent %>%
+          <div class="status-item">
+            <span class="status-value total-value"><%= total %></span>
+            <span class="status-label">Total</span>
           </div>
         </div>
-      <% }); %>
-    </div>
+        <div class="occupancy-bar">
+          <div class="occupancy-fill" style="width: <%= percent %>%"></div>
+          <!-- <div class="occupancy-fill" style="width: <%= percent %>%;"></div> -->
 
-    <!-- PARKING SLOTS PER AREA -->
-    <% areas.forEach((area, areaIndex) => { %>
-      <div class="area-block">
-        <span class="area-title" onclick="toggleArea(<%= areaIndex %>)">
-          <span class="caret" id="caret-<%= areaIndex %>">&#9654;</span> <%= area %>
-        </span>
-        <div class="area-table-wrapper" id="area-table-<%= areaIndex %>">
-          <div class="slot-grid">
-            <% for(let i = 1; i <= 50; i++) {
-              const slotData = (slots[area] || []).find(s => s.slotNumber === i);
-              const isOccupied = slotData && slotData.occupied;
-              const employeeId = slotData ? slotData.employeeId : null;
-            %>
-              <div class="parking-slot <%= isOccupied ? 'slot-occupied' : 'slot-available' %>">
-                <div class="slot-number">Slot <%= i %></div>
-                <% if (isOccupied) { %>
-                  <div class="slot-status occupied">Occupied</div>
-                  <div class="emp-id">Emp ID: <%= employeeId %></div>
-                  <form class="action-form" method="POST" action="/release">
-                    <input type="hidden" name="area" value="<%= area %>">
-                    <input type="hidden" name="slotNumber" value="<%= i %>">
-                    <button class="btn">Release</button>
-                  </form>
-                <% } else { %>
-                  <div class="slot-status available">Available</div>
-                  <form class="action-form" method="POST" action="/assign">
-                    <input type="hidden" name="area" value="<%= area %>">
-                    <input type="hidden" name="slotNumber" value="<%= i %>">
-                    <input type="text" name="employeeId" placeholder="Enter Emp ID" required>
-                    <button class="btn">Assign</button>
-                  </form>
-                <% } %>
-              </div>
-            <% } %>
-          </div>
+        </div>
+        <div style="text-align:center; margin-top:5px; font-size:0.9em;">
+          Occupancy: <%= percent %>%
         </div>
       </div>
-    <% }); %>
+    <% }) %>
   </div>
+
+  <!-- PARKING SLOTS PER AREA -->
+  <% areas.forEach((area, areaIndex) => { %>
+    <div class="area-block">
+      <span class="area-title" onclick="toggleArea(<%= areaIndex %>)">
+        <span class="caret" id="caret-<%= areaIndex %>">&#9654;</span>
+        <%= area %>
+      </span>
+      <div class="area-table-wrapper" id="area-table-<%= areaIndex %>">
+        <div class="slot-grid">
+          <% for (let i = 1; i <= 50; i++) {
+            const slotData = (slots[area] || []).find(s => s.slotNumber === i);
+            const isOccupied = slotData && slotData.occupied;
+            const employeeId = slotData ? slotData.employeeId : null;
+          %>
+            <div class="parking-slot <%= isOccupied ? 'slot-occupied' : 'slot-available' %>" data-area="<%= area %>" data-slot="<%= i %>">
+              <div class="slot-number">Slot <%= i %></div>
+              <% if (isOccupied) { %>
+                <div class="slot-status occupied">Occupied</div>
+                <div class="emp-id">Emp ID: <%= employeeId %></div>
+                <form class="action-form" onsubmit="releaseSlot(event, this)">
+                  <input type="hidden" name="vehicleNo" value="<%= slotData.carNumber %>">
+                  <button class="btn">Release</button>
+                </form>
+              <% } else { %>
+                <div class="slot-status available">Available</div>
+                <form class="action-form" onsubmit="assignSlot(event, this)">
+                  <input type="hidden" name="area" value="<%= area %>">
+                  <input type="hidden" name="slotNumber" value="<%= i %>">
+                  <input type="text" name="employeeId" placeholder="Enter Emp ID" required>
+                  <button class="btn">Assign</button>
+                </form>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+
+  <script src="/js/dashboard.js"></script>
 </body>
+
 </html>
-  
