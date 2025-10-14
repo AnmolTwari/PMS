@@ -4,68 +4,55 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Bootstrap & Bootstrap Icons CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-
-  <title>Executive Dashboard - Parksy</title>
-
-  <!-- Bootstrap CDN -->
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
   <link rel="stylesheet" href="/css/user-Panel.css" />
+  <title>Executive Dashboard - Parksy</title>
 </head>
 
 <body id="top">
 
-  <!-- Bootstrap Header -->
-  <nav class="navbar navbar-expand-lg position-relative" style="background-color: #1e40af; height: 80px;">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg" style="background-color: #1e40af; height: 80px;">
     <div class="container-fluid h-100 d-flex align-items-center justify-content-between">
-
-      <!-- LOGO -->
+      <!-- Logo -->
       <a class="navbar-brand d-flex align-items-center" href="/home">
         <img src="/images/logo.png" alt="Logo" style="height: 110px;" class="me-3">
       </a>
-
-      <!-- CENTERED WELCOME MESSAGE (absolute centering) -->
+      <!-- Centered welcome message -->
       <div class="position-absolute start-50 translate-middle-x text-white">
         <strong>Welcome, <%= username %>!</strong>
       </div>
-
-      <!-- TOGGLER -->
+      <!-- Toggler -->
       <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
       </button>
-
-      <!-- NAV LINKS -->
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
+      <!-- Nav Links -->
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
           <li class="nav-item">
-            <a class="nav-link text-white active" href="#top">Home</a>
+            <a class="nav-link text-white fw-semibold active px-3" href="#top">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white" href="#about">About</a>
+            <a class="nav-link text-white fw-semibold px-3" href="#about">About</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white" href="#services">Services</a>
+            <a class="nav-link text-white fw-semibold px-3" href="#services">Services</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link text-white" href="#contact">Contact</a>
+            <a class="nav-link text-white fw-semibold px-3" href="#contact">Contact</a>
           </li>
         </ul>
-
       </div>
 
     </div>
   </nav>
 
-
-
+  <!-- Alert system -->
   <div class="alert-system" id="alertSystem"></div>
 
   <div class="container-fluid my-4 px-4">
-
     <!-- Main Dashboard Grid -->
     <div class="dashboard-grid">
       <!-- Executive Profile Card -->
@@ -73,12 +60,10 @@
         <div class="loading-overlay" id="profileLoader">
           <div class="spinner"></div>
         </div>
-
         <div class="card-header">
           <div class="card-icon">👤</div>
-          <div class="card-title">Executive Profile</div>
+          <div class="card-title">Your Profile</div>
         </div>
-
         <div class="info-matrix">
           <div class="info-cell">
             <div class="info-label">Employee ID</div>
@@ -104,26 +89,20 @@
           <div class="info-cell">
             <div class="info-label">Department</div>
             <div class="info-value">
-              <span>Executive Operations</span>
-              <span style="color: #ff6b9d;">EXE-2024-001</span>
+              <%= department %>
             </div>
           </div>
         </div>
-
         <!-- Vehicle Info Section -->
         <div class="vehicle-status" id="vehicleStatus">
           <div class="vehicle-content">
-            <div class="card-header" style="margin-bottom: 20px;">
-              <div class="card-icon" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);">🚗</div>
-              <div class="card-title" style="background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;">
-                Active Vehicle
-              </div>
+            <div class="status-card">
+              <div class="card-icon">🚗</div>
+              <span class="card-label">Active Vehicle</span>
             </div>
+
             <div class="info-cell">
-              <div class="info-label">Vehicle Registration</div>
+              <div class="info-label">Registered Vehicle</div>
               <div class="info-value">
                 <span>
                   <%= vehicleNo %>
@@ -133,10 +112,9 @@
             </div>
           </div>
         </div>
-
-        <!-- Reservation Slot Details (Conditional) -->
+        <!-- Reservation Slot Details -->
         <div id="reservationDetailsContainer" class="reservation-details">
-          <% if (bookedSlot) { %>
+          <% if (bookedSlot && bookedSlot.carNumber!==null ) { %>
             <div class="reservation-card">
               <h3>🚗 Reserved Parking Details</h3>
               <p><strong>Parking Area:</strong>
@@ -148,7 +126,6 @@
               <p><strong>Reservation Time:</strong>
                 <%= bookedSlot.bookingTime ? bookedSlot.bookingTime.toLocaleString() : 'N/A' %>
               </p>
-
               <form id="releaseForm">
                 <input type="hidden" name="vehicleNo" value="<%= vehicleNo %>" />
                 <button type="submit" class="btn btn-danger" id="releaseSlotBtn">❌ Release Slot</button>
@@ -161,18 +138,15 @@
               <% } %>
         </div>
       </div>
-
       <!-- Smart Parking Control -->
       <div class="executive-card">
         <div class="loading-overlay" id="parkingLoader">
           <div class="spinner"></div>
         </div>
-
         <div class="card-header">
           <div class="card-icon">🅿️</div>
           <div class="card-title">Smart Parking Control</div>
         </div>
-
         <div class="form-container">
           <form id="parkingForm">
             <div class="form-group">
@@ -185,20 +159,17 @@
                 <option value="Area 4">Parking Area 4</option>
               </select>
             </div>
-
             <div class="form-group">
               <label class="form-label">Select Parking Slot</label>
               <select name="slotId" id="slotSelect" class="form-input" required>
                 <option value="" disabled selected>-- Select a Slot --</option>
               </select>
             </div>
-
             <div class="form-group">
               <label class="form-label">Vehicle Registration</label>
               <input type="text" name="vehicleNo" class="form-input"
                 placeholder="Enter vehicle registration (e.g., EXEC-2024-VIP)" required>
             </div>
-
             <div class="btn-group">
               <button type="submit" class="btn btn-primary">
                 <span>🅿️</span> Reserve Parking
@@ -207,8 +178,12 @@
                 <span>📊</span> Check Status
               </button>
             </div>
+
           </form>
         </div>
+
+
+
       </div>
     </div>
 
@@ -227,12 +202,12 @@
     </div>
   </div>
 
-  <!-- 🔹 About Section -->
+  <!-- About Section -->
   <section id="about" class="py-5" style="background-color: #f8f9fa;">
     <div class="container">
       <div class="row justify-content-center text-center">
         <div class="col-lg-8">
-          <h2 class="mb-4 text-primary">About ParkSy</h2>
+          <!-- <h2 class="mb-4 text-primary">About ParkSy</h2> -->
           <p class="lead">
             <strong>ParkSy</strong> is a smart parking management system designed to modernize and simplify parking
             operations for residential complexes, corporate offices, malls, and public spaces.
@@ -263,16 +238,15 @@
     </div>
   </section>
 
-  <!-- 🔹 Services Section -->
+  <!-- Services Section -->
   <section id="services" class="py-5 bg-light">
     <div class="container text-center">
-      <h2 class="text-primary mb-4">Our Services</h2>
+      <!-- <h2 class="text-primary mb-4">Our Services</h2> -->
       <p class="lead mb-5">
         At <strong>ParkSy</strong>, we offer smart, scalable, and intuitive parking solutions designed to enhance
         convenience, control, and security.
       </p>
       <div class="row g-4">
-
         <!-- Service Card 1 -->
         <div class="col-md-4">
           <div class="p-4 border rounded shadow-sm h-100">
@@ -284,7 +258,6 @@
             </p>
           </div>
         </div>
-
         <!-- Service Card 2 -->
         <div class="col-md-4">
           <div class="p-4 border rounded shadow-sm h-100">
@@ -296,7 +269,6 @@
             </p>
           </div>
         </div>
-
         <!-- Service Card 3 -->
         <div class="col-md-4">
           <div class="p-4 border rounded shadow-sm h-100">
@@ -308,25 +280,22 @@
             </p>
           </div>
         </div>
-
       </div>
     </div>
   </section>
 
-
-  <!-- 🔹 Contact Section -->
+  <!-- Contact Section -->
   <section id="contact" class="py-5">
     <div class="container">
       <div class="row justify-content-center text-center mb-4">
         <div class="col-lg-8">
-          <h2 class="text-primary mb-3">Contact Us</h2>
+          <!-- <h2 class="text-primary mb-3">Contact Us</h2> -->
           <p class="lead">
             Have questions, suggestions, or feedback? We'd love to hear from you. Reach out to us at
             <strong>support@parksy.com</strong> or fill out the form below.
           </p>
         </div>
       </div>
-
       <div class="row justify-content-center">
         <div class="col-md-8">
           <form action="/contact" method="POST">
@@ -348,22 +317,17 @@
               <button type="submit" class="btn btn-primary px-4">Send Message</button>
             </div>
           </form>
-
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Professional Footer -->
+  <!-- Footer -->
   <footer class="bg-primary text-white text-center text-lg-start">
-    <!-- Grid container -->
-    <div class="container p-4" style="background-color: transparent;">
-      <!--Grid row-->
+    <div class="container p-4">
       <div class="row">
-        <!--Grid column-->
         <div class="col-lg-6 col-md-12 mb-4 mb-md-0">
           <h5 class="text-uppercase">About Parksy</h5>
-
           <p>
             Parksy is a smart solution for efficient parking management. Whether you're managing a facility or looking
             for a seamless parking experience, Parksy makes reserving and monitoring parking spots easy and efficient.
@@ -372,72 +336,29 @@
             Join thousands of users transforming parking operations with our easy-to-use platform designed for
             businesses and individuals alike.
           </p>
-
         </div>
-        <!--Grid column-->
-
-        <!--Grid column-->
         <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
-          <h5 class="text-uppercase">Links</h5>
-
+          <h5 class="text-uppercase">Social Links</h5>
           <ul class="list-unstyled mb-0">
-            <li>
-              <a href="#!" class="text-white">Link 1</a>
+            <li><a href="https://www.instagram.com/cgcuniversitymohali/">Instagram</a></li>
+            <li><a href="https://www.facebook.com/ChandigarhGroupOfCollegesLandran/">Facebook</a>
             </li>
-            <li>
-              <a href="#!" class="text-white">Link 2</a>
-            </li>
-            <li>
-              <a href="#!" class="text-white">Link 3</a>
-            </li>
-            <li>
-              <a href="#!" class="text-white">Link 4</a>
-            </li>
+            <li><a href="https://x.com/cgcuniversity">X</a></li>
+            <li><a href="https://www.youtube.com/@cgcjhanjeri">Youtube</a></li>
           </ul>
         </div>
-        <!--Grid column-->
 
-        <!--Grid column-->
-        <div class="col-lg-3 col-md-6 mb-4 mb-md-0">
-          <h5 class="text-uppercase mb-0">Links</h5>
-
-          <ul class="list-unstyled">
-            <li>
-              <a href="#!" class="text-white">Link 1</a>
-            </li>
-            <li>
-              <a href="#!" class="text-white">Link 2</a>
-            </li>
-            <li>
-              <a href="#!" class="text-white">Link 3</a>
-            </li>
-            <li>
-              <a href="#!" class="text-white">Link 4</a>
-            </li>
-          </ul>
-        </div>
-        <!--Grid column-->
       </div>
-      <!--Grid row-->
     </div>
-    <!-- Grid container -->
-
-    <!-- Copyright -->
     <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.2);">
       © 2020 Copyright:
-      <a class="text-white" href="https://mdbootstrap.com/">MDBootstrap.com</a>
+      <a class="text-white" href="/views/thank-you.ejs">Parksy.com</a>
     </div>
-    <!-- Copyright -->
   </footer>
 
-
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
-
-<script src="/js/user-Panel.js" defer></script>
-
+  <script src="/js/user-Panel.js" defer></script>
 </body>
 
 </html>

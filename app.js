@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema({
   vehicleNo: { type: String, default: null },
   resetPasswordToken: String,
   resetPasswordExpires: Date,
+    department: {type:String},
 });
 
 const parkingSlotSchema = new mongoose.Schema({
@@ -168,8 +169,10 @@ app.post('/login', async (req, res) => {
 app.get('/register', (req, res) => res.render('register', { error: null }));
 
 app.post('/register', async (req, res) => {
-  const { username, email, password, mobile, employeeId } = req.body;
-  if (!username || !email || !password || !mobile || !employeeId) {
+  const { username, email, password, mobile, employeeId, department } = req.body;
+  console.log('🧾 req.body:', req.body);
+  
+  if (!username || !email || !password || !mobile || !employeeId ||!department) {
     return res.render('register', { error: 'All fields are required' });
   }
 
@@ -182,7 +185,7 @@ app.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const role = username === ADMIN_CONFIG.username && email === ADMIN_CONFIG.email ? 'admin' : 'user';
 
-    const newUser = new User({ username, email, password: hashedPassword, mobile, employeeId, role });
+    const newUser = new User({ username, email, password: hashedPassword, mobile, employeeId,department,  role });
     await newUser.save();
     res.redirect('/login');
   } catch (err) {
@@ -280,12 +283,14 @@ app.get('/user-panel', authenticateToken, async (req, res) => {
     // Find the slot booked by the current user's vehicle (if any)
     const bookedSlot = await ParkingSlot.findOne({ carNumber: user.vehicleNo });
 
+
     res.render('user-panel', {
       username: user.username,
       email: user.email,
       mobile: user.mobile,
       employeeId: user.employeeId,
       vehicleNo: user.vehicleNo,
+      department: user.department,
       slots: groupSlotsByArea(slots),
       bookedSlot: bookedSlot || null, // Ensure it's defined
     });
@@ -500,8 +505,46 @@ app.post('/assign', async (req, res) => {
     res.status(500).json({ message: 'Error assigning slot.' });
   }
 });
+const router = express.Router();
+
+app.post('/reserve-permanent-slot', async (req, res) => {
+  try {
+    const user = req.session.user;
+    const preferredArea = req.body.preferredArea;
+
+    // Check if user already has a permanent slot
+    const existing = await ParkingSlot.findOne({ permanentUserId: user._id });
+    if (existing) {
+      return res.send('You already have a permanent slot assigned.');
+    }
+
+    // Find an available slot in the preferred area
+    const slot = await ParkingSlot.findOne({
+      areaName: preferredArea,
+      isPermanent: false,
+      occupied: false,
+      permanentUserId: null
+    });
+
+    if (!slot) {
+      return res.send('No available slots in this area for permanent reservation.');
+    }
+
+    slot.isPermanent = true;
+    slot.permanentUserId = user._id;
+    slot.occupied = true; // Optional: Treat as always occupied
+    await slot.save();
+
+    res.redirect('/user-dashboard');
+  } catch (err) {
+    console.error('Error reserving permanent slot:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 
+
+// POST route for auto-assigning a parking slot
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -7,7 +7,10 @@ const parkingSlotSchema = new mongoose.Schema({
   occupied: Boolean,
   carNumber: String,
   bookingTime: Date,
-}, { timestamps: true }); // ← This adds createdAt and updatedAt
 
+  // 🆕 Permanent reservation fields
+  isPermanent: { type: Boolean, default: false },
+  permanentUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+}, { timestamps: true });
 
 module.exports = mongoose.model('ParkingSlot', parkingSlotSchema);

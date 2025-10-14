@@ -9,7 +9,8 @@ const userSchema = new mongoose.Schema({
   vehicleNo: { type: String, unique: true, required: false },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   resetPasswordToken: String,
-  reserPasswordExpires: Date,
+  resetPasswordExpires: Date,
+  department: {type:String},
 
   assignedSlot: {
     type: mongoose.Schema.Types.ObjectId,
