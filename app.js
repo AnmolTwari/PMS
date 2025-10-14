@@ -8,6 +8,9 @@ const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const path = require('path');
+app.set('views', path.join(__dirname, 'views')); // ensures correct folder
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
