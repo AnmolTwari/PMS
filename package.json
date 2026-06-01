@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build --config client/vite.config.js",
     "start": "npm run build && node backend/server.js",
+    "stop": "powershell -NoProfile -Command \"Get-Process | Where-Object { $_.ProcessName -like 'node' -or $_.ProcessName -like 'mongod*' } | Stop-Process -Force -ErrorAction SilentlyContinue\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
