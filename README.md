@@ -1,108 +1,116 @@
 # ParkSy PMS
 
-ParkSy PMS is a corporate-style parking management platform for schools, malls, and enterprise sites. It combines a React/Vite frontend, an Express API, MongoDB models, and Socket.io updates into one local demo experience.
+ParkSy PMS is a polished parking-management demo application designed for schools, malls, and enterprise sites. It pairs a modern React + Vite single-page frontend with an Express API backend, Mongoose models, and Socket.io for realtime updates. A built-in demo database (mongodb-memory-server) makes it easy to run locally without external services.
 
-## Highlights
+## Quick Start (Local)
 
-- Modern public website with a professional landing page
-- Separate admin and user dashboards
-- Real-time parking updates and notifications
-- Vehicle management, slot booking, releases, and reservations
-- Guard tools, visitor passes, blocked vehicles, reports, and analytics
-- Local demo database powered by `mongodb-memory-server`
-
-## Tech Stack
-
-- **Frontend:** React, Vite, React Router
-- **Backend:** Node.js, Express
-- **Database:** MongoDB models with in-memory demo storage
-- **Realtime:** Socket.io
-- **Auth:** Cookie-based JWT
-
-## Quick Start
+1. Install dependencies:
 
 ```powershell
 npm install
+```
+
+2. Start the app (builds the frontend and launches the backend):
+
+```powershell
 npm start
 ```
 
-`npm start` builds the frontend and starts the backend on `http://localhost:3000`.
+3. Open the app in your browser:
 
-If port `3000` is already in use, stop the old Node process and run `npm start` again.
+```
+http://localhost:3000
+```
 
-## Demo Login
+Available npm scripts:
 
-The app seeds an initial admin account on startup.
+```powershell
+npm run build    # Build the frontend (Vite)
+npm start        # Build and run the full app
+npm run stop     # Stop local node/mongod processes (Windows PowerShell)
+```
 
-```text
+Notes:
+- The demo seeds an initial admin user at first startup.
+- The in-memory MongoDB resets on server restart — this is intentional for demo mode.
+
+## Demo Credentials
+
+The app seeds a default admin on startup. Use the seeded credentials to sign in and explore admin features.
+
+Example (may differ in your seed):
+
+```
 Email: admin@company.com
 Username: superadmin
 Password: SecurePass123!
 ```
 
-The login form accepts email, mobile number, employee ID, username, or name.
-
-## Available Roles
-
-- `superAdmin`
-- `admin`
-- `securityGuard`
-- `employee`
-- `student`
-- `visitor`
-
-## What You Can Test
-
-- **Public website:** landing page, login, registration, forgot/reset password
-- **User portal:** profile, vehicle management, parking booking, releases, upcoming reservations
-- **Admin portal:** dashboard, branches, analytics, reports, settings, users, notifications
-- **Security tools:** check-in, check-out, visitor passes, blocked vehicle checks
+The login accepts email, username, employee ID or mobile number depending on the seeded data.
 
 ## Project Structure
 
-```text
-backend/
-  server.js               Express entry point
-  src/config              Database bootstrap
-  src/controllers         Request handlers
-  src/middleware          Auth and maintenance middleware
-  src/models              MongoDB schemas
-  src/routes              API routes
-  src/services            Startup, realtime, notifications, seed data
-  src/utils               Shared helpers
-client/
-  src/App.jsx             Frontend router and app shell
-  src/components          Shared UI pieces
-  src/context             Auth context
-  src/pages               Public pages and dashboards
-  src/styles.css          Global corporate UI styling
+```
+backend/                # Express server and API
+  server.js
+  src/
+    config/             # DB & app config
+    controllers/        # Route handlers
+    middleware/         # Auth, maintenance
+    models/             # Mongoose schemas
+    routes/             # API routes
+    services/           # realtime, seed, notification helpers
+
+client/                 # Vite + React SPA
+  src/
+    App.jsx
+    main.jsx
+    components/
+    pages/
+    styles.css          # global design tokens + component surfaces
 ```
 
-## Scripts
+## Common Tasks & Troubleshooting
+
+- If port `3000` is in use, stop the running Node process. On Windows you can run:
 
 ```powershell
-npm run build   # Build the frontend with Vite
-npm start       # Build and launch the full app
+npm run stop
+# or run directly:
+Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
-## Notes
-
-- This project uses a temporary in-memory MongoDB instance for demo mode, so data resets when the server restarts.
-- The repo has been modernized away from the older EJS/public-page structure.
-- Realtime updates and notifications are handled through Socket.io.
-
-## GitHub Upload
-
-Before pushing to GitHub, make sure you only commit source files and documentation.
-
-Recommended flow:
+- When pulling changes on Windows you may see file-lock errors for cached native binaries (examples: `mongodb-memory-server` cache, `bcrypt` prebuilds). Close running node processes and retry, or remove the cache folder:
 
 ```powershell
-git status
-git add README.md client backend package.json package-lock.json .gitignore
-git add -u
-git commit -m "Modernize ParkSy UI and documentation"
+Remove-Item -Recurse -Force node_modules\.cache
+```
+
+- To rebuild the frontend only:
+
+```powershell
+npm run build
+```
+
+## Notifications & UI
+
+- The header notification bell renders a floating `.notification-panel` whose styling lives in `client/src/styles.css`. If the panel appears off-screen in your layout you can tweak the panel positioning in that file (search for `.notification-panel`). For robust anchoring, the component is `client/src/components/NotificationBell.jsx`.
+
+## Publishing & GitHub
+
+- There is a `v1.0.0` tag in this repository representing the modernized UI and backend. To push changes:
+
+```powershell
+git add -A
+git commit -m "Your message"
 git push origin main
 ```
 
-If you want to remove old tracked files from the GitHub repo, keep the deletions staged and push them together with the update.
+- If you removed legacy files locally, make sure deletions are staged before pushing so they are removed on GitHub as well.
+
+## Contributing
+
+If you want changes (styling tweaks, accessibility improvements, or test coverage), open an issue or create a branch and a PR. I can help prepare a clean PR and changelog entry.
+
+---
+If you'd like, I can: update this README with a short changelog entry, draft a GitHub Release body for `v1.0.0`, or open a PR with the README changes. Tell me which one to do next.
