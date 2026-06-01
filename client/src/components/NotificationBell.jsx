@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { request } from '../api/request';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,44 @@ export function NotificationBell() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
+  const buttonRef = useRef(null);
+  const [panelStyle, setPanelStyle] = useState({});
+
+  function updatePanelPosition() {
+    if (!buttonRef.current) return;
+
+    const rect = buttonRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const panelWidth = Math.min(380, viewportWidth - 28);
+    const margin = 12;
+    const rightGap = viewportWidth - rect.right;
+    let left = rect.right - panelWidth;
+
+    if (rightGap < panelWidth) {
+      left = viewportWidth - panelWidth - margin;
+    }
+
+    if (left < margin) {
+      left = margin;
+    }
+
+    const preferredTop = rect.bottom + margin;
+    const maxHeight = Math.max(220, viewportHeight - preferredTop - margin);
+    let top = preferredTop;
+
+    if (top + 360 > viewportHeight && rect.top > 360) {
+      top = Math.max(margin, rect.top - 360 - margin);
+    }
+
+    setPanelStyle({
+      position: 'fixed',
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${panelWidth}px`,
+      maxHeight: `${maxHeight}px`,
+    });
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -33,6 +71,19 @@ export function NotificationBell() {
     return () => { mounted = false; socket.disconnect(); };
   }, [user]);
 
+  useEffect(() => {
+    if (!open) return undefined;
+
+    updatePanelPosition();
+    window.addEventListener('resize', updatePanelPosition);
+    window.addEventListener('scroll', updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePanelPosition);
+      window.removeEventListener('scroll', updatePanelPosition, true);
+    };
+  }, [open]);
+
   const unread = notifications.filter((n) => !n.read).length;
 
   async function markRead(id) {
@@ -46,11 +97,19 @@ export function NotificationBell() {
 
   return (
     <div className="notification-bell">
-      <button className="icon-button" onClick={() => setOpen(!open)} aria-label="Notifications">
+      <button ref={buttonRef} className="icon-button" onClick={() => {
+        setOpen((current) => {
+          const next = !current;
+          if (!current) {
+            window.requestAnimationFrame(updatePanelPosition);
+          }
+          return next;
+        });
+      }} aria-label="Notifications">
         🔔 {unread ? <span className="badge">{unread}</span> : null}
       </button>
       {open ? (
-        <div className="notification-panel">
+        <div className="notification-panel" style={panelStyle}>
           <div className="panel-header"><strong>Notifications</strong></div>
           <div className="panel-list">
             {notifications.length ? notifications.map((n) => (

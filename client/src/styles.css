@@ -1636,13 +1636,9 @@ td, th, .metric-label, .metric-subtext, .brand-subtitle, .notif-body, .notif-tim
 }
 
 .notification-panel {
-  /* Use fixed positioning so the panel stays within the viewport
-     even when the bell is near the edge */
   position: fixed;
-  right: 20px;
-  top: 72px;
-  width: min(380px, calc(100vw - 28px));
-  max-height: calc(100vh - 140px);
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 24px));
   overflow: hidden;
   border-radius: 22px;
   border: 1px solid rgba(148, 163, 184, 0.16);
@@ -1650,7 +1646,7 @@ td, th, .metric-label, .metric-subtext, .brand-subtitle, .notif-body, .notif-tim
   box-shadow: 0 28px 80px rgba(2, 8, 20, 0.52);
   backdrop-filter: blur(20px);
   z-index: 2000;
-  transform-origin: top right;
+  transform-origin: top left;
 }
 
 .notification-panel .panel-header {
@@ -1672,7 +1668,7 @@ td, th, .metric-label, .metric-subtext, .brand-subtitle, .notif-body, .notif-tim
   display: grid;
   gap: 10px;
   padding: 12px;
-  max-height: calc(100vh - 220px);
+  max-height: min(460px, calc(100vh - 110px));
   overflow: auto;
 }
 
