@@ -4,6 +4,9 @@
   "type": "commonjs",
   "main": "backend/server.js",
   "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "vite --config client/vite.config.js",
+    "dev:server": "nodemon backend/server.js",
     "build": "vite build --config client/vite.config.js",
     "start": "npm run build && node backend/server.js",
     "stop": "powershell -NoProfile -Command \"Get-Process | Where-Object { $_.ProcessName -like 'node' -or $_.ProcessName -like 'mongod*' } | Stop-Process -Force -ErrorAction SilentlyContinue\"",
@@ -31,6 +34,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^10.0.1",
+    "nodemon": "^3.1.14",
     "vite": "^6.3.5"
   }
 }

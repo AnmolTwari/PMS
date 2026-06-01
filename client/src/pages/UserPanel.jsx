@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { request } from '../api/request';
 import { LoadingScreen, MetricCard, NoticePage, ProfileRow } from '../components/Shared';
 
-export function DashboardRouter() {
+export function UserPanelPage() {
   const { user, loading } = useAuth();
 
   if (loading) return <LoadingScreen />;
@@ -93,7 +93,7 @@ function AdminDashboard() {
     const startTime = form.get('startTime');
     const endTime = form.get('endTime');
     const activeDays = [];
-    ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach((d) => {
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach((d) => {
       if (form.get(d)) activeDays.push(d);
     });
 
@@ -328,7 +328,7 @@ function AdminDashboard() {
             <span>Select user</span>
             <select name="userId">
               <option value="">Select user</option>
-              {data.users.map((u) => <option key={u.id} value={u.id}>{u.name || u.username} — {u.email}</option>)}
+              {data.users.map((u) => <option key={u.id} value={u.id}>{u.name || u.username} â€” {u.email}</option>)}
             </select>
           </label>
           <label className="field">
@@ -595,7 +595,7 @@ function UserDashboard() {
 
           <div className="reservation-box">
             <strong>Profile snapshot</strong>
-            <p>{data.profile.branchName || 'Main Branch'} • {data.profile.department || 'No department set'}</p>
+            <p>{data.profile.branchName || 'Main Branch'} â€¢ {data.profile.department || 'No department set'}</p>
             <span>{vehicles.length ? `${vehicles.length} vehicles on file` : 'No vehicles saved yet'}</span>
           </div>
 
@@ -621,7 +621,7 @@ function UserDashboard() {
                 <article className={`vehicle-card ${vehicle.isDefault ? 'selected' : ''}`} key={vehicle.number}>
                   <div>
                     <strong>{vehicle.number}</strong>
-                    <p>{vehicle.type}{vehicle.model ? ` • ${vehicle.model}` : ''}</p>
+                    <p>{vehicle.type}{vehicle.model ? ` â€¢ ${vehicle.model}` : ''}</p>
                     <span>{vehicle.color || 'No color set'}</span>
                   </div>
                   <div className="vehicle-actions">
@@ -782,3 +782,5 @@ function UserDashboard() {
     </div>
   );
 }
+
+export default UserPanelPage;

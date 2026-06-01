@@ -10,13 +10,25 @@ ParkSy PMS is a polished parking-management demo application designed for school
 npm install
 ```
 
-2. Start the app (builds the frontend and launches the backend):
+2. Start the app for development with hot reload:
+
+```powershell
+npm run dev
+```
+
+3. Open the dev frontend in your browser:
+
+```
+http://localhost:5173
+```
+
+4. Start the production-style app (builds the frontend and launches the backend):
 
 ```powershell
 npm start
 ```
 
-3. Open the app in your browser:
+5. Open the production app in your browser:
 
 ```
 http://localhost:3000
@@ -25,6 +37,9 @@ http://localhost:3000
 Available npm scripts:
 
 ```powershell
+npm run dev     # Vite + backend with hot reload
+npm run dev:client
+npm run dev:server
 npm run build    # Build the frontend (Vite)
 npm start        # Build and run the full app
 npm run stop     # Stop local node/mongod processes (Windows PowerShell)
@@ -33,6 +48,12 @@ npm run stop     # Stop local node/mongod processes (Windows PowerShell)
 Notes:
 - The demo seeds an initial admin user at first startup.
 - The in-memory MongoDB resets on server restart — this is intentional for demo mode.
+
+## Recent Updates
+
+- Added a real hot-reload development workflow with `npm run dev`.
+- Renamed the dashboard page to `client/src/pages/UserPanel.jsx` so the file name matches the `/user-panel` route.
+- Refined the notifications layout so the panel stays readable across screen sizes.
 
 ## Demo Credentials
 

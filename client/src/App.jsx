@@ -7,7 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { DashboardRouter } from './pages/DashboardPages';
+import UserPanelPage from './pages/UserPanel';
 import { UpcomingReservations } from './pages/UpcomingReservations';
 import { RealTimeMap } from './pages/RealTimeMap';
 import { GuardDashboard } from './pages/GuardDashboard';
@@ -34,7 +34,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/dashboard" element={<DashboardRouter />} />
+          <Route path="/dashboard" element={<UserPanelPage />} />
           <Route path="/dashboard/upcoming" element={<UpcomingReservations />} />
           <Route path="/dashboard/map" element={<RealTimeMap />} />
           <Route path="/guard" element={<GuardDashboard />} />
@@ -48,7 +48,7 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/user-panel" element={<DashboardRouter />} />
+          <Route path="/user-panel" element={<UserPanelPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AppShell>

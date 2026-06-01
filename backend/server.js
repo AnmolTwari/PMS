@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
 const path = require('path');
 const { Server } = require('socket.io');
 
@@ -64,11 +65,15 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'pms-session-secret';
 const CLIENT_DIST_DIR = path.join(__dirname, '..', 'client', 'dist');
+const CLIENT_INDEX_FILE = path.join(CLIENT_DIST_DIR, 'index.html');
+const HAS_CLIENT_BUILD = fs.existsSync(CLIENT_INDEX_FILE);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(CLIENT_DIST_DIR));
+if (HAS_CLIENT_BUILD) {
+  app.use(express.static(CLIENT_DIST_DIR));
+}
 
 const { authenticateToken, requireRole } = createAuthMiddleware(JWT_SECRET);
 const authController = createAuthController({ jwtSecret: JWT_SECRET });
@@ -126,7 +131,12 @@ app.use('/api', (req, res, next) => {
 });
 
 app.get(/^(?!\/api).*/, (_req, res) => {
-  res.sendFile(path.join(CLIENT_DIST_DIR, 'index.html'));
+  if (HAS_CLIENT_BUILD) {
+    res.sendFile(CLIENT_INDEX_FILE);
+    return;
+  }
+
+  res.status(404).send('Frontend is not built. Run `npm run dev` for hot reload or `npm run build` first.');
 });
 
 async function bootstrap() {
